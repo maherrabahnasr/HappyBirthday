@@ -2,47 +2,146 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Milad's 1st Birthday Games</title>
   <style>
     :root {
       --primary: #4f46e5;
+      --primary-active: #3730a3;
       --bg: #f8fafc;
       --card: #ffffff;
-      --text: #1e293b;
+      --text: #0f172a;
       --muted: #64748b;
-      --success: #10b981;
-      --error: #ef4444;
+      --success: #16a34a;
+      --error: #dc2626;
       --border: #e2e8f0;
+      --radius: 20px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 16px; min-height: 100vh; }
-    .container { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 16px; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
 
-    header { text-align: center; margin-top: 8px; }
-    header h1 { font-size: 1.5rem; color: var(--primary); font-weight: 800; }
-    header p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+      overflow-x: hidden;
+    }
 
-    .card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
-    .hidden { display: none !important; }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: auto 0;
+    }
 
-    .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.15s; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); margin-top: 8px; }
+    header {
+      text-align: center;
+      padding-top: env(safe-area-inset-top);
+    }
 
-    input[type="text"] { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; margin-bottom: 12px; outline: none; }
-    input[type="text"]:focus { border-color: var(--primary); }
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
 
-    /* Video & Reveal Container */
+    header p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 2px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      min-height: 50px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:active {
+      background: var(--primary-active);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text);
+      margin-top: 8px;
+    }
+
+    /* Input: 16px avoids iOS zoom */
+    input[type="text"] {
+      width: 100%;
+      min-height: 50px;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      font-size: 16px;
+      margin-bottom: 12px;
+      outline: none;
+      background: #fff;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+
+    /* Video Container */
     .media-stage {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 9;
+      aspect-ratio: 16 / 10;
       background: #000;
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -54,7 +153,6 @@
       object-fit: contain;
     }
 
-    /* Secret Cover Overlay */
     .audio-cover {
       position: absolute;
       inset: 0;
@@ -63,44 +161,43 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       color: white;
       z-index: 10;
-      transition: opacity 0.4s ease, transform 0.4s ease;
+      transition: opacity 0.35s ease, transform 0.35s ease;
     }
 
     .audio-cover.revealed {
       opacity: 0;
       pointer-events: none;
-      transform: scale(1.05);
+      transform: scale(1.04);
     }
 
-    /* Pulsing Audio Animation */
     .sound-pulse {
-      width: 58px;
-      height: 58px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.8rem;
-      animation: pulse 1.5s infinite ease-in-out;
+      font-size: 1.6rem;
+      animation: pulse 1.6s infinite ease-in-out;
     }
 
     @keyframes pulse {
       0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-      70% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
     }
 
     .play-audio-btn {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.15);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.4);
       padding: 8px 16px;
       border-radius: 20px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
     }
@@ -113,52 +210,138 @@
     }
 
     .choice-btn {
-      padding: 16px 8px;
+      min-height: 72px;
+      padding: 10px 4px;
       border: 2px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       background: white;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 4px;
-      transition: all 0.15s ease;
+      transition: background 0.1s ease, transform 0.1s ease;
     }
 
     .choice-btn span.emoji {
-      font-size: 1.4rem;
+      font-size: 1.5rem;
     }
 
     .choice-btn:active {
-      background-color: #f1f5f9;
-      transform: translateY(1px);
+      background: #f1f5f9;
+      transform: scale(0.96);
     }
 
     .choice-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+      opacity: 0.5;
+      pointer-events: none;
     }
 
     /* Photo Game */
-    .photo-frame { width: 100%; aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; background: #e2e8f0; margin-bottom: 16px; }
-    .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-frame {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #e2e8f0;
+      margin-bottom: 14px;
+    }
 
-    .slider-box { text-align: center; margin-bottom: 16px; }
-    .slider-box .val { font-size: 1.6rem; font-weight: 800; color: var(--primary); margin: 6px 0; }
-    input[type="range"] { width: 100%; accent-color: var(--primary); }
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-    .status-bar { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 12px; }
-    .feedback { text-align: center; font-weight: 700; font-size: 1.05rem; margin-top: 12px; min-height: 28px; }
+    .slider-box {
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .slider-box .val {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 4px 0 8px;
+    }
+
+    /* High-touch range input */
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      accent-color: var(--primary);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .feedback {
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-top: 10px;
+      min-height: 24px;
+    }
+
     .correct { color: var(--success); }
     .wrong { color: var(--error); }
 
-    .leaderboard-list { list-style: none; margin-top: 12px; }
-    .leaderboard-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
-    .rank { font-weight: 700; color: var(--muted); width: 28px; }
-    .player { flex: 1; font-weight: 600; }
-    .pts { font-weight: 800; color: var(--primary); }
+    /* Leaderboard */
+    .leaderboard-list {
+      list-style: none;
+      margin-top: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+
+    .rank {
+      font-weight: 800;
+      color: var(--muted);
+      width: 28px;
+    }
+
+    .player {
+      flex: 1;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 8px;
+    }
+
+    .pts {
+      font-weight: 800;
+      color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -171,11 +354,11 @@
 
   <!-- SCREEN 1: LOGIN -->
   <div id="screen-login" class="card">
-    <h2 style="font-size: 1.2rem; margin-bottom: 6px;">Join the Games</h2>
-    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 16px;">
-      Listen to the secret sound clips and guess who made them: <strong>Milad</strong>, <strong>Maher</strong>, or <strong>Maisune</strong>!
+    <h2 style="font-size: 1.15rem; margin-bottom: 6px;">Join the Games</h2>
+    <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; line-height: 1.4;">
+      Listen closely to secret clips and guess who made the sound: <strong>Milad</strong>, <strong>Maher</strong>, or <strong>Maisune</strong>!
     </p>
-    <input type="text" id="player-name" placeholder="Your name or nickname..." maxlength="20">
+    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" autocomplete="off" autocorrect="off" />
     <button class="btn btn-primary" onclick="initApp()">Start Game</button>
   </div>
 
@@ -187,11 +370,11 @@
     </div>
 
     <div class="media-stage">
-      <video id="who-video" playsinline preload="auto"></video>
+      <video id="who-video" playsinline webkit-playsinline preload="auto"></video>
       <div id="audio-cover" class="audio-cover">
         <div class="sound-pulse">🔊</div>
-        <div style="font-weight: 700; font-size: 1.05rem;">Listen Closely...</div>
-        <button class="play-audio-btn" onclick="replayAudio()">▶ Play Audio Again</button>
+        <div style="font-weight: 700; font-size: 0.95rem;">Listen Closely...</div>
+        <button class="play-audio-btn" onclick="replayAudio()">▶ Play Sound Again</button>
       </div>
     </div>
 
@@ -220,12 +403,12 @@
       <span id="age-count">1/5</span>
     </div>
     <div class="photo-frame">
-      <img id="age-img" src="" alt="Baby photo">
+      <img id="age-img" src="" alt="Baby photo" />
     </div>
     <div class="slider-box">
-      <div>How old was Milad here?</div>
+      <div style="font-size: 0.9rem; color: var(--muted);">How old was Milad here?</div>
       <div class="val"><span id="slider-num">6</span> Months</div>
-      <input type="range" id="age-range" min="0" max="12" value="6" oninput="document.getElementById('slider-num').innerText = this.value">
+      <input type="range" id="age-range" min="0" max="12" value="6" oninput="document.getElementById('slider-num').innerText = this.value" />
     </div>
     <button class="btn btn-primary" onclick="submitAgeGuess()">Confirm Guess</button>
     <div id="age-feedback" class="feedback"></div>
@@ -233,9 +416,9 @@
 
   <!-- SCREEN 4: FINISH -->
   <div id="screen-finish" class="card hidden">
-    <h2 style="text-align: center;">You Finished! 🎈</h2>
-    <p style="text-align: center; color: var(--muted); margin-top: 4px;">Total Score:</p>
-    <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); text-align: center; margin: 16px 0;">
+    <h2 style="text-align: center; font-size: 1.3rem;">You Finished! 🎈</h2>
+    <p style="text-align: center; color: var(--muted); margin-top: 4px; font-size: 0.9rem;">Your Final Score:</p>
+    <div style="font-size: 2.6rem; font-weight: 800; color: var(--primary); text-align: center; margin: 12px 0;">
       <span id="final-score">0</span> <span style="font-size: 1rem; color: var(--muted);">pts</span>
     </div>
     <button id="btn-save" class="btn btn-primary" onclick="saveScore()">Submit to Leaderboard</button>
@@ -243,9 +426,9 @@
 
   <!-- SCREEN 5: LEADERBOARD -->
   <div id="screen-leaderboard" class="card hidden">
-    <h3 style="text-align: center; margin-bottom: 8px;">🏆 Live Leaderboard</h3>
+    <h3 style="text-align: center; margin-bottom: 6px; font-size: 1.15rem;">🏆 Party Leaderboard</h3>
     <ul id="leaderboard-items" class="leaderboard-list">
-      <li style="text-align:center; padding: 12px; color: var(--muted);">Loading scores...</li>
+      <li style="text-align: center; padding: 12px; color: var(--muted); font-size: 0.9rem;">Loading scores...</li>
     </ul>
     <button class="btn btn-outline" onclick="location.reload()">Play Again</button>
   </div>
@@ -274,7 +457,6 @@
     document.getElementById("screen-who").classList.remove("hidden");
     document.getElementById("who-feedback").innerText = "Loading party clips...";
 
-    // Fetch assets from the deployed Apps Script URL
     try {
       const [vidsRes, photosRes] = await Promise.all([
         fetch(`${API_URL}?action=getVideos`).then(r => r.json()),
@@ -286,15 +468,13 @@
       if (driveVideos.length > 0) {
         renderWho();
       } else {
-        document.getElementById("who-feedback").innerText = "No video clips found in the folder.";
+        document.getElementById("who-feedback").innerText = "No clips found. Check Drive permissions.";
       }
     } catch (err) {
-      console.error("Asset loading error:", err);
-      document.getElementById("who-feedback").innerText = "Error loading assets. Please check your Drive folder permissions.";
+      document.getElementById("who-feedback").innerText = "Error loading clips. Please refresh.";
     }
   }
 
-  // --- PART 1: AUDIO & REVEAL ---
   function renderWho() {
     if (!driveVideos || driveVideos.length === 0) return;
 
@@ -352,7 +532,6 @@
     }, 4500);
   }
 
-  // --- PART 2: GUESS THE AGE ---
   function renderAge() {
     if (!drivePhotos || drivePhotos.length === 0) {
       setTimeout(renderAge, 300);
@@ -394,7 +573,6 @@
     }, 1400);
   }
 
-  // --- SUBMISSION & LEADERBOARD ---
   async function saveScore() {
     const btn = document.getElementById("btn-save");
     btn.disabled = true;
@@ -409,7 +587,6 @@
       const leaderboard = await res.json();
       renderLeaderboard(leaderboard);
     } catch (err) {
-      console.error("Score submission error:", err);
       btn.innerText = "Failed to submit. Retry?";
       btn.disabled = false;
     }
@@ -421,7 +598,7 @@
 
     const list = document.getElementById("leaderboard-items");
     if (!scores || scores.length === 0) {
-      list.innerHTML = `<li style="text-align:center; padding:12px; color:var(--muted);">No scores recorded yet.</li>`;
+      list.innerHTML = `<li style="text-align:center; padding:12px; color:var(--muted); font-size:0.9rem;">No scores recorded yet.</li>`;
       return;
     }
 
