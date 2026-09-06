@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Milad's 1st Birthday Games</title>
   <style>
     :root {
       --primary: #4f46e5;
@@ -184,7 +186,6 @@
       <span id="who-count">1/5</span>
     </div>
 
-    <!-- Media Stage -->
     <div class="media-stage">
       <video id="who-video" playsinline preload="auto"></video>
       <div id="audio-cover" class="audio-cover">
@@ -194,7 +195,6 @@
       </div>
     </div>
 
-    <!-- 3 Options -->
     <div class="choice-grid-3">
       <button class="choice-btn option-btn" onclick="submitWhoAnswer('Milad')">
         <span class="emoji">👶</span>
@@ -252,6 +252,8 @@
 </div>
 
 <script>
+  const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
+
   let playerName = "";
   let score = 0;
   let whoIdx = 0;
@@ -260,7 +262,7 @@
   let driveVideos = [];
   let drivePhotos = [];
 
-  function initApp() {
+  async function initApp() {
     const input = document.getElementById("player-name");
     if (!input.value.trim()) {
       alert("Please enter your name!");
@@ -268,32 +270,38 @@
     }
     playerName = input.value.trim();
 
-    // Fetch video and photo data in parallel
-    google.script.run.withSuccessHandler(vids => {
-      driveVideos = vids;
-      if (vids.length > 0) renderWho();
-    }).getGameVideos();
-
-    google.script.run.withSuccessHandler(photos => {
-      drivePhotos = photos;
-    }).getGamePhotos();
-
     document.getElementById("screen-login").classList.add("hidden");
     document.getElementById("screen-who").classList.remove("hidden");
+    document.getElementById("who-feedback").innerText = "Loading party clips...";
+
+    // Fetch assets from the deployed Apps Script URL
+    try {
+      const [vidsRes, photosRes] = await Promise.all([
+        fetch(`${API_URL}?action=getVideos`).then(r => r.json()),
+        fetch(`${API_URL}?action=getPhotos`).then(r => r.json())
+      ]);
+      driveVideos = vidsRes;
+      drivePhotos = photosRes;
+
+      if (driveVideos.length > 0) {
+        renderWho();
+      } else {
+        document.getElementById("who-feedback").innerText = "No video clips found in the folder.";
+      }
+    } catch (err) {
+      console.error("Asset loading error:", err);
+      document.getElementById("who-feedback").innerText = "Error loading assets. Please check your Drive folder permissions.";
+    }
   }
 
   // --- PART 1: AUDIO & REVEAL ---
   function renderWho() {
-    if (!driveVideos || driveVideos.length === 0) {
-      document.getElementById("who-feedback").innerText = "Loading clips from Drive...";
-      return;
-    }
+    if (!driveVideos || driveVideos.length === 0) return;
 
     const item = driveVideos[whoIdx];
     const video = document.getElementById("who-video");
     const cover = document.getElementById("audio-cover");
 
-    // Reset controls & UI state
     cover.classList.remove("revealed");
     document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
@@ -301,10 +309,7 @@
 
     video.src = item.src;
     video.currentTime = 0;
-
-    video.play().catch(() => {
-      // Browser autoplay restriction fallback handled by replay button
-    });
+    video.play().catch(() => {});
   }
 
   function replayAudio() {
@@ -319,15 +324,13 @@
     const cover = document.getElementById("audio-cover");
     const fb = document.getElementById("who-feedback");
 
-    // Disable buttons to avoid multiple taps
     document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = true);
 
-    // Reveal video and replay from beginning
     cover.classList.add("revealed");
     video.currentTime = 0;
     video.play();
 
-    if (choice === item.answer) {
+    if (choice.toLowerCase() === item.answer.toLowerCase()) {
       score += 100;
       fb.className = "feedback correct";
       fb.innerText = `Spot on! It was ${item.answer}! (+100)`;
@@ -336,7 +339,6 @@
       fb.innerText = `Nope! That was actually ${item.answer}!`;
     }
 
-    // Give 4.5 seconds to watch the reveal before advancing
     setTimeout(() => {
       video.pause();
       whoIdx++;
@@ -393,14 +395,24 @@
   }
 
   // --- SUBMISSION & LEADERBOARD ---
-  function saveScore() {
+  async function saveScore() {
     const btn = document.getElementById("btn-save");
     btn.disabled = true;
     btn.innerText = "Submitting...";
 
-    google.script.run
-      .withSuccessHandler(renderLeaderboard)
-      .recordScore(playerName, score);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ name: playerName, score: score })
+      });
+      const leaderboard = await res.json();
+      renderLeaderboard(leaderboard);
+    } catch (err) {
+      console.error("Score submission error:", err);
+      btn.innerText = "Failed to submit. Retry?";
+      btn.disabled = false;
+    }
   }
 
   function renderLeaderboard(scores) {
