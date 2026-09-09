@@ -129,21 +129,25 @@
       border-color: var(--primary);
     }
 
-    /* Video Frame */
+    /* Video Frame: Uncropped view with letterbox */
     .media-stage {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 10;
+      aspect-ratio: 4 / 3;
       background: #000;
       border-radius: 14px;
       overflow: hidden;
       margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    iframe {
+    video {
       width: 100%;
       height: 100%;
-      border: none;
+      object-fit: contain; /* Shows entire video uncropped */
+      background: #000;
     }
 
     .audio-cover {
@@ -154,27 +158,33 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
       color: white;
       z-index: 10;
-      transition: opacity 0.35s ease, transform 0.35s ease;
+      transition: opacity 0.25s ease;
     }
 
     .audio-cover.revealed {
       opacity: 0;
       pointer-events: none;
-      transform: scale(1.04);
     }
 
     .sound-pulse {
-      width: 54px;
-      height: 54px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.6rem;
+      font-size: 1.8rem;
+      animation: pulse 1.4s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 16px rgba(255, 255, 255, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
     }
 
     .choice-grid-3 {
@@ -227,7 +237,8 @@
     .photo-frame img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain; /* Full uncropped picture */
+      background: #000;
     }
 
     .slider-box {
@@ -323,7 +334,7 @@
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT (REVEAL) -->
+  <!-- SCREEN 2: WHO SAID IT (VIDEO REVEAL) -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
@@ -331,10 +342,10 @@
     </div>
 
     <div class="media-stage">
-      <iframe id="who-frame" allow="autoplay"></iframe>
+      <video id="who-video" playsinline webkit-playsinline preload="auto"></video>
       <div id="audio-cover" class="audio-cover">
         <div class="sound-pulse">🔊</div>
-        <div style="font-weight: 700; font-size: 0.95rem;">Listen To The Clip...</div>
+        <div style="font-weight: 700; font-size: 1rem;">Playing Sound...</div>
       </div>
     </div>
 
@@ -395,10 +406,6 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
-  /* =======================================================
-     JSON-STORED LEADERBOARD
-     Pre-seed default scores directly in this JSON array.
-  ======================================================= */
   const DEFAULT_LEADERBOARD = [
     { "name": "Baba", "score": 950 },
     { "name": "Mama", "score": 900 },
@@ -413,7 +420,6 @@
   let driveVideos = [];
   let drivePhotos = [];
 
-  // Initialize Leaderboard in localStorage if not already present
   function getLeaderboardData() {
     const raw = localStorage.getItem("party_leaderboard_json");
     if (!raw) {
@@ -434,7 +440,6 @@
       score: finalScore,
       timestamp: new Date().toISOString()
     });
-    // Sort descending
     scores.sort((a, b) => b.score - a.score);
     localStorage.setItem("party_leaderboard_json", JSON.stringify(scores));
     return scores;
@@ -448,9 +453,14 @@
     }
     playerName = input.value.trim();
 
+    // Prime the audio context on direct user gesture so iOS/Android won't block unmuted autoplay
+    const video = document.getElementById("who-video");
+    video.muted = false;
+    video.play().then(() => video.pause()).catch(() => {});
+
     const startBtn = document.getElementById("btn-start");
     startBtn.disabled = true;
-    startBtn.innerText = "Loading assets...";
+    startBtn.innerText = "Loading clips...";
 
     try {
       const [vidsRes, photosRes] = await Promise.all([
@@ -462,7 +472,7 @@
       drivePhotos = Array.isArray(photosRes) ? photosRes : [];
 
       if (driveVideos.length === 0) {
-        alert("No videos found! Make sure your video filenames include 'milad', 'maher', or 'maisune'.");
+        alert("No video clips matched. Check folder names for 'milad', 'maher', or 'maisune'.");
         startBtn.disabled = false;
         startBtn.innerText = "Start Game";
         return;
@@ -473,7 +483,7 @@
       renderWho();
     } catch (err) {
       console.error(err);
-      alert("Failed to load clips. Please check network connection.");
+      alert("Failed to load clips. Please check connection.");
       startBtn.disabled = false;
       startBtn.innerText = "Start Game";
     }
@@ -483,26 +493,42 @@
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
     const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
+    const video = document.getElementById("who-video");
     const cover = document.getElementById("audio-cover");
 
     cover.classList.remove("revealed");
+    document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = true);
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
     document.getElementById("who-feedback").innerText = "";
 
-    frame.src = item.src;
-    document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
+    // Direct Google Drive high-throughput media stream
+    video.src = `https://drive.google.com/uc?id=${item.id}&export=download`;
+    video.muted = false;
+    video.load();
+
+    video.oncanplay = () => {
+      video.play().catch(err => {
+        console.warn("Autoplay blocked, unmuting on choice tap:", err);
+      });
+      document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
+    };
   }
 
   function submitWhoAnswer(choice) {
     if (!driveVideos[whoIdx]) return;
 
     const item = driveVideos[whoIdx];
+    const video = document.getElementById("who-video");
     const cover = document.getElementById("audio-cover");
     const fb = document.getElementById("who-feedback");
 
     document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = true);
+
+    // Immediately reveal the full uncropped video and replay from beginning
     cover.classList.add("revealed");
+    video.currentTime = 0;
+    video.muted = false;
+    video.play();
 
     if (choice.toLowerCase() === item.answer.toLowerCase()) {
       score += 100;
@@ -513,7 +539,9 @@
       fb.innerText = `Nope! That was actually ${item.answer}!`;
     }
 
+    // Auto-advance after showing the reveal
     setTimeout(() => {
+      video.pause();
       whoIdx++;
       if (whoIdx < driveVideos.length) {
         renderWho();
@@ -567,7 +595,6 @@
   }
 
   function saveScore() {
-    // Save to client-side JSON database
     const updatedLeaderboard = addScoreToJSON(playerName, score);
     renderLeaderboard(updatedLeaderboard);
   }
