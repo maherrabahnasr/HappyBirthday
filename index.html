@@ -24,7 +24,7 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
@@ -58,7 +58,6 @@
       font-size: 1.4rem;
       font-weight: 800;
       color: var(--primary);
-      letter-spacing: -0.02em;
     }
 
     header p {
@@ -79,7 +78,6 @@
       display: none !important;
     }
 
-    /* Buttons */
     .btn {
       width: 100%;
       min-height: 50px;
@@ -115,7 +113,6 @@
       margin-top: 8px;
     }
 
-    /* Input: 16px avoids iOS zoom */
     input[type="text"] {
       width: 100%;
       min-height: 50px;
@@ -132,7 +129,7 @@
       border-color: var(--primary);
     }
 
-    /* Video Container */
+    /* Video Frame */
     .media-stage {
       position: relative;
       width: 100%;
@@ -141,15 +138,12 @@
       border-radius: 14px;
       overflow: hidden;
       margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    video {
+    iframe {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      border: none;
     }
 
     .audio-cover {
@@ -181,27 +175,8 @@
       align-items: center;
       justify-content: center;
       font-size: 1.6rem;
-      animation: pulse 1.6s infinite ease-in-out;
     }
 
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-      70% { transform: scale(1.08); box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-    }
-
-    .play-audio-btn {
-      background: rgba(255, 255, 255, 0.15);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    /* 3-Column Choice Grid */
     .choice-grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -267,7 +242,6 @@
       margin: 4px 0 8px;
     }
 
-    /* High-touch range input */
     input[type="range"] {
       width: 100%;
       height: 8px;
@@ -275,14 +249,6 @@
       background: #e2e8f0;
       accent-color: var(--primary);
       outline: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: var(--primary);
-      cursor: pointer;
     }
 
     .status-bar {
@@ -305,7 +271,6 @@
     .correct { color: var(--success); }
     .wrong { color: var(--error); }
 
-    /* Leaderboard */
     .leaderboard-list {
       list-style: none;
       margin-top: 8px;
@@ -331,9 +296,6 @@
     .player {
       flex: 1;
       font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       padding-right: 8px;
     }
 
@@ -355,38 +317,37 @@
   <div id="screen-login" class="card">
     <h2 style="font-size: 1.15rem; margin-bottom: 6px;">Join the Games</h2>
     <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; line-height: 1.4;">
-      Listen closely to secret clips and guess who made the sound: <strong>Milad</strong>, <strong>Maher</strong>, or <strong>Maisune</strong>!
+      Listen to the secret sound clips and guess who made them: <strong>Milad</strong>, <strong>Maher</strong>, or <strong>Maisune</strong>!
     </p>
-    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" autocomplete="off" autocorrect="off" />
-    <button class="btn btn-primary" onclick="initApp()">Start Game</button>
+    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" />
+    <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT (VIDEO REVEAL) -->
+  <!-- SCREEN 2: WHO SAID IT (REVEAL) -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
-      <span id="who-count">1/5</span>
+      <span id="who-count">Loading...</span>
     </div>
 
     <div class="media-stage">
-      <video id="who-video" playsinline webkit-playsinline preload="auto"></video>
+      <iframe id="who-frame" allow="autoplay"></iframe>
       <div id="audio-cover" class="audio-cover">
         <div class="sound-pulse">🔊</div>
-        <div style="font-weight: 700; font-size: 0.95rem;">Listen Closely...</div>
-        <button class="play-audio-btn" onclick="replayAudio()">▶ Play Sound Again</button>
+        <div style="font-weight: 700; font-size: 0.95rem;">Listen To The Clip...</div>
       </div>
     </div>
 
     <div class="choice-grid-3">
-      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Milad')">
+      <button class="choice-btn option-btn" disabled onclick="submitWhoAnswer('Milad')">
         <span class="emoji">👶</span>
         <span>Milad</span>
       </button>
-      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Maher')">
+      <button class="choice-btn option-btn" disabled onclick="submitWhoAnswer('Maher')">
         <span class="emoji">🧔</span>
         <span>Maher</span>
       </button>
-      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Maisune')">
+      <button class="choice-btn option-btn" disabled onclick="submitWhoAnswer('Maisune')">
         <span class="emoji">👩</span>
         <span>Maisune</span>
       </button>
@@ -426,15 +387,23 @@
   <!-- SCREEN 5: LEADERBOARD -->
   <div id="screen-leaderboard" class="card hidden">
     <h3 style="text-align: center; margin-bottom: 6px; font-size: 1.15rem;">🏆 Party Leaderboard</h3>
-    <ul id="leaderboard-items" class="leaderboard-list">
-      <li style="text-align: center; padding: 12px; color: var(--muted); font-size: 0.9rem;">Loading scores...</li>
-    </ul>
+    <ul id="leaderboard-items" class="leaderboard-list"></ul>
     <button class="btn btn-outline" onclick="location.reload()">Play Again</button>
   </div>
 </div>
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
+
+  /* =======================================================
+     JSON-STORED LEADERBOARD
+     Pre-seed default scores directly in this JSON array.
+  ======================================================= */
+  const DEFAULT_LEADERBOARD = [
+    { "name": "Baba", "score": 950 },
+    { "name": "Mama", "score": 900 },
+    { "name": "Auntie", "score": 850 }
+  ];
 
   let playerName = "";
   let score = 0;
@@ -444,6 +413,33 @@
   let driveVideos = [];
   let drivePhotos = [];
 
+  // Initialize Leaderboard in localStorage if not already present
+  function getLeaderboardData() {
+    const raw = localStorage.getItem("party_leaderboard_json");
+    if (!raw) {
+      localStorage.setItem("party_leaderboard_json", JSON.stringify(DEFAULT_LEADERBOARD));
+      return DEFAULT_LEADERBOARD;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return DEFAULT_LEADERBOARD;
+    }
+  }
+
+  function addScoreToJSON(name, finalScore) {
+    const scores = getLeaderboardData();
+    scores.push({
+      name: name,
+      score: finalScore,
+      timestamp: new Date().toISOString()
+    });
+    // Sort descending
+    scores.sort((a, b) => b.score - a.score);
+    localStorage.setItem("party_leaderboard_json", JSON.stringify(scores));
+    return scores;
+  }
+
   async function initApp() {
     const input = document.getElementById("player-name");
     if (!input.value.trim()) {
@@ -452,67 +448,61 @@
     }
     playerName = input.value.trim();
 
-    document.getElementById("screen-login").classList.add("hidden");
-    document.getElementById("screen-who").classList.remove("hidden");
-    document.getElementById("who-feedback").innerText = "Loading party clips...";
+    const startBtn = document.getElementById("btn-start");
+    startBtn.disabled = true;
+    startBtn.innerText = "Loading assets...";
 
     try {
       const [vidsRes, photosRes] = await Promise.all([
         fetch(`${API_URL}?action=getVideos`).then(r => r.json()),
         fetch(`${API_URL}?action=getPhotos`).then(r => r.json())
       ]);
-      driveVideos = vidsRes;
-      drivePhotos = photosRes;
 
-      if (driveVideos.length > 0) {
-        renderWho();
-      } else {
-        document.getElementById("who-feedback").innerText = "No clips found. Check Drive permissions.";
+      driveVideos = Array.isArray(vidsRes) ? vidsRes : [];
+      drivePhotos = Array.isArray(photosRes) ? photosRes : [];
+
+      if (driveVideos.length === 0) {
+        alert("No videos found! Make sure your video filenames include 'milad', 'maher', or 'maisune'.");
+        startBtn.disabled = false;
+        startBtn.innerText = "Start Game";
+        return;
       }
+
+      document.getElementById("screen-login").classList.add("hidden");
+      document.getElementById("screen-who").classList.remove("hidden");
+      renderWho();
     } catch (err) {
-      document.getElementById("who-feedback").innerText = "Error loading clips. Please refresh.";
+      console.error(err);
+      alert("Failed to load clips. Please check network connection.");
+      startBtn.disabled = false;
+      startBtn.innerText = "Start Game";
     }
   }
 
   function renderWho() {
-    if (!driveVideos || driveVideos.length === 0) return;
+    if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
     const item = driveVideos[whoIdx];
-    const video = document.getElementById("who-video");
+    const frame = document.getElementById("who-frame");
     const cover = document.getElementById("audio-cover");
 
     cover.classList.remove("revealed");
-    document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
     document.getElementById("who-feedback").innerText = "";
 
-    video.src = item.src;
-    video.load();
-
-    video.oncanplay = () => {
-      video.play().catch(e => {
-        console.log("Autoplay waiting for user gesture:", e);
-      });
-    };
-  }
-
-  function replayAudio() {
-    const video = document.getElementById("who-video");
-    video.currentTime = 0;
-    video.play();
+    frame.src = item.src;
+    document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
   }
 
   function submitWhoAnswer(choice) {
+    if (!driveVideos[whoIdx]) return;
+
     const item = driveVideos[whoIdx];
-    const video = document.getElementById("who-video");
     const cover = document.getElementById("audio-cover");
     const fb = document.getElementById("who-feedback");
 
     document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = true);
-
     cover.classList.add("revealed");
-    video.currentTime = 0;
-    video.play();
 
     if (choice.toLowerCase() === item.answer.toLowerCase()) {
       score += 100;
@@ -524,7 +514,6 @@
     }
 
     setTimeout(() => {
-      video.pause();
       whoIdx++;
       if (whoIdx < driveVideos.length) {
         renderWho();
@@ -577,23 +566,10 @@
     }, 1400);
   }
 
-  async function saveScore() {
-    const btn = document.getElementById("btn-save");
-    btn.disabled = true;
-    btn.innerText = "Submitting...";
-
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ name: playerName, score: score })
-      });
-      const leaderboard = await res.json();
-      renderLeaderboard(leaderboard);
-    } catch (err) {
-      btn.innerText = "Failed to submit. Retry?";
-      btn.disabled = false;
-    }
+  function saveScore() {
+    // Save to client-side JSON database
+    const updatedLeaderboard = addScoreToJSON(playerName, score);
+    renderLeaderboard(updatedLeaderboard);
   }
 
   function renderLeaderboard(scores) {
@@ -601,12 +577,7 @@
     document.getElementById("screen-leaderboard").classList.remove("hidden");
 
     const list = document.getElementById("leaderboard-items");
-    if (!scores || scores.length === 0) {
-      list.innerHTML = `<li style="text-align:center; padding:12px; color:var(--muted); font-size:0.9rem;">No scores recorded yet.</li>`;
-      return;
-    }
-
-    list.innerHTML = scores.map((entry, idx) => `
+    list.innerHTML = scores.slice(0, 10).map((entry, idx) => `
       <li class="leaderboard-item">
         <span class="rank">#${idx + 1}</span>
         <span class="player">${escapeText(entry.name)}</span>
