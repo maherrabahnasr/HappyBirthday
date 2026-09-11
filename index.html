@@ -133,11 +133,12 @@
       border-color: var(--primary);
     }
 
+    /* Video Media Container */
     .media-stage {
       position: relative;
       width: 100%;
-      height: 420px;
-      max-height: 55vh;
+      height: 380px;
+      max-height: 50vh;
       background: #000;
       border-radius: 14px;
       overflow: hidden;
@@ -149,6 +150,44 @@
       height: 100%;
       border: none;
       background: #000;
+    }
+
+    /* Secret Sound Blocker Overlay */
+    .audio-veil {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, #312e81 0%, #0f172a 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: white;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+
+    .audio-veil.revealed {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sound-pulse {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      animation: pulse 1.4s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
     }
 
     .choice-grid-3 {
@@ -183,6 +222,7 @@
       transform: scale(0.96);
     }
 
+    /* Photo Game */
     .photo-frame {
       width: 100%;
       aspect-ratio: 1 / 1;
@@ -264,7 +304,7 @@
       margin-bottom: 10px;
     }
 
-    /* LARGE PROMINENT RESULT OVERLAY */
+    /* Large Prominent Overlays */
     .result-overlay {
       position: absolute;
       inset: 0;
@@ -311,7 +351,7 @@
     }
 
     .overlay-detail {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 600;
       background: rgba(255, 255, 255, 0.1);
       padding: 12px 18px;
@@ -373,7 +413,7 @@
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT -->
+  <!-- SCREEN 2: WHO SAID IT (SECRET AUDIO THEN REVEAL) -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
@@ -381,7 +421,15 @@
     </div>
 
     <div class="media-stage">
+      <!-- The Video Frame -->
       <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
+
+      <!-- Sound-Only Visual Veil (Hides Video until guess) -->
+      <div id="audio-veil" class="audio-veil">
+        <div class="sound-pulse">🔊</div>
+        <div style="font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em;">Listening Mode</div>
+        <div style="color: #94a3b8; font-size: 0.85rem;">Guess who made that noise below!</div>
+      </div>
     </div>
 
     <div class="choice-grid-3">
@@ -399,7 +447,7 @@
       </button>
     </div>
 
-    <!-- Video Question Overlay -->
+    <!-- Video Result Overlay -->
     <div id="who-overlay" class="result-overlay hidden">
       <div id="who-icon" class="overlay-icon"></div>
       <div id="who-title" class="overlay-title"></div>
@@ -427,7 +475,7 @@
 
     <button class="btn btn-primary" id="btn-confirm-age" disabled onclick="submitAgeGuess()">Confirm Guess</button>
 
-    <!-- Photo Question Overlay -->
+    <!-- Photo Result Overlay -->
     <div id="age-overlay" class="result-overlay hidden">
       <div id="age-icon" class="overlay-icon"></div>
       <div id="age-title" class="overlay-title"></div>
@@ -458,7 +506,6 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
-  // Clean empty leaderboard starter
   const DEFAULT_LEADERBOARD = [];
 
   let playerName = "";
@@ -559,20 +606,31 @@
   function renderWho() {
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
+    // Reset overlay & veil
     document.getElementById("who-overlay").classList.add("hidden");
+    document.getElementById("audio-veil").classList.remove("revealed");
 
     const item = driveVideos[whoIdx];
     const frame = document.getElementById("who-frame");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview`;
+
+    // Auto-play the clip behind the veil
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
   }
 
   function submitWhoAnswer(choice) {
     if (!driveVideos[whoIdx]) return;
 
     const item = driveVideos[whoIdx];
+    const frame = document.getElementById("who-frame");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
+
+    // 1. Remove the veil to reveal the video
+    document.getElementById("audio-veil").classList.add("revealed");
+
+    // 2. Replay the video from the beginning now that it's visible
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
 
     const iconEl = document.getElementById("who-icon");
     const titleEl = document.getElementById("who-title");
@@ -594,6 +652,7 @@
       detailEl.innerText = `That sound was actually ${item.answer}!`;
     }
 
+    // Display result overlay
     document.getElementById("who-overlay").classList.remove("hidden");
   }
 
