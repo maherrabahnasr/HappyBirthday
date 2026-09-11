@@ -129,7 +129,6 @@
       border-color: var(--primary);
     }
 
-    /* Diagnostics Box */
     .diag-box {
       background: #0f172a;
       color: #38bdf8;
@@ -141,23 +140,21 @@
       word-break: break-all;
     }
 
+    /* Embedded Drive Video Stage */
     .media-stage {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 9;
+      aspect-ratio: 16 / 10;
       background: #000;
       border-radius: 14px;
       overflow: hidden;
       margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    video {
+    iframe {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      border: none;
       background: #000;
     }
 
@@ -214,7 +211,6 @@
       object-fit: contain;
     }
 
-    /* NEW: High-Touch Month Picker Component */
     .month-picker-container {
       display: flex;
       flex-direction: column;
@@ -244,7 +240,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.1s;
     }
 
     .stepper-btn:active {
@@ -259,7 +254,6 @@
       text-align: center;
     }
 
-    /* 6x2 Touch Grid for Months 1-12 */
     .month-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -367,23 +361,24 @@
   <div id="screen-login" class="card">
     <h2 style="font-size: 1.15rem; margin-bottom: 6px;">Join the Games</h2>
     <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; line-height: 1.4;">
-      Enter your name to play along:
+      Enter your name to start playing:
     </p>
     <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" />
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT -->
+  <!-- SCREEN 2: WHO SAID IT (DIRECT EMBED) -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
       <span id="who-count">Loading...</span>
     </div>
 
-    <div id="video-diag" class="diag-box">Connecting to Drive...</div>
+    <div id="video-diag" class="diag-box">Loading player...</div>
 
+    <!-- Clean iframe player pulling directly from Google Drive -->
     <div class="media-stage">
-      <video id="who-video" controls playsinline webkit-playsinline preload="metadata"></video>
+      <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
     </div>
 
     <div class="choice-grid-3">
@@ -415,18 +410,13 @@
       <img id="age-img" src="" alt="Baby photo" />
     </div>
 
-    <!-- Interactive 1-12 Month Picker -->
     <div class="month-picker-container">
       <div class="picker-display-row">
         <button class="stepper-btn" onclick="stepMonth(-1)">−</button>
         <div class="selected-month-val"><span id="month-num">6</span> Months</div>
         <button class="stepper-btn" onclick="stepMonth(1)">+</button>
       </div>
-
-      <!-- Quick 12-Button Grid -->
-      <div class="month-grid" id="month-grid">
-        <!-- Rendered dynamically 1-12 -->
-      </div>
+      <div class="month-grid" id="month-grid"></div>
     </div>
 
     <button class="btn btn-primary" onclick="submitAgeGuess()">Confirm Guess</button>
@@ -469,7 +459,6 @@
   let driveVideos = [];
   let drivePhotos = [];
 
-  // Build the 1-12 month touch buttons
   function initMonthGrid() {
     const grid = document.getElementById("month-grid");
     grid.innerHTML = "";
@@ -533,7 +522,7 @@
 
     const startBtn = document.getElementById("btn-start");
     startBtn.disabled = true;
-    startBtn.innerText = "Connecting to Drive...";
+    startBtn.innerText = "Loading from Drive...";
 
     try {
       const [vidsRes, photosRes] = await Promise.all([
@@ -556,7 +545,7 @@
       renderWho();
     } catch (err) {
       console.error(err);
-      alert("Failed to reach Apps Script. Check network or deployment.");
+      alert("Failed to reach Apps Script. Check network connection.");
       startBtn.disabled = false;
       startBtn.innerText = "Start Game";
     }
@@ -566,26 +555,16 @@
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
     const item = driveVideos[whoIdx];
-    const video = document.getElementById("who-video");
+    const frame = document.getElementById("who-frame");
     const diag = document.getElementById("video-diag");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
     document.getElementById("who-feedback").innerText = "";
 
-    diag.innerHTML = `File: <b>${item.name}</b><br>Expected Answer: <b>${item.answer}</b>`;
+    diag.innerHTML = `File: <b>${item.name}</b>`;
 
-    video.src = `https://drive.google.com/uc?id=${item.id}&export=download`;
-    video.muted = false;
-    video.load();
-
-    video.onerror = () => {
-      video.src = `https://lh3.googleusercontent.com/d/${item.id}`;
-      video.load();
-    };
-
-    video.onloadeddata = () => {
-      video.play().catch(e => console.log("Autoplay waiting for tap:", e));
-    };
+    // Embed Google Drive's native video player (works across all browsers)
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview`;
   }
 
   function submitWhoAnswer(choice) {
