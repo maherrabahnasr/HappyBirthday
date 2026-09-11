@@ -102,10 +102,6 @@
       color: white;
     }
 
-    .btn-primary:active {
-      background: var(--primary-active);
-    }
-
     .btn-outline {
       background: transparent;
       border: 2px solid var(--border);
@@ -129,11 +125,23 @@
       border-color: var(--primary);
     }
 
-    /* Video Frame: Uncropped view with letterbox */
+    /* Diagnostics Box */
+    .diag-box {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 0.75rem;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+
+    /* Fully Visible Video Frame with Native Controls */
     .media-stage {
       position: relative;
       width: 100%;
-      aspect-ratio: 4 / 3;
+      aspect-ratio: 16 / 9;
       background: #000;
       border-radius: 14px;
       overflow: hidden;
@@ -146,45 +154,8 @@
     video {
       width: 100%;
       height: 100%;
-      object-fit: contain; /* Shows entire video uncropped */
+      object-fit: contain;
       background: #000;
-    }
-
-    .audio-cover {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, #1e1b4b, #312e81);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      color: white;
-      z-index: 10;
-      transition: opacity 0.25s ease;
-    }
-
-    .audio-cover.revealed {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .sound-pulse {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      animation: pulse 1.4s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-      70% { transform: scale(1.08); box-shadow: 0 0 0 16px rgba(255, 255, 255, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
     }
 
     .choice-grid-3 {
@@ -237,7 +208,7 @@
     .photo-frame img {
       width: 100%;
       height: 100%;
-      object-fit: contain; /* Full uncropped picture */
+      object-fit: contain;
       background: #000;
     }
 
@@ -321,44 +292,44 @@
 <div class="container">
   <header>
     <h1>Milad's 1st Birthday! 🎂</h1>
-    <p>Who made that sound?</p>
+    <p>Video Playback Test</p>
   </header>
 
   <!-- SCREEN 1: LOGIN -->
   <div id="screen-login" class="card">
     <h2 style="font-size: 1.15rem; margin-bottom: 6px;">Join the Games</h2>
     <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; line-height: 1.4;">
-      Listen to the secret sound clips and guess who made them: <strong>Milad</strong>, <strong>Maher</strong>, or <strong>Maisune</strong>!
+      Enter your name to test video and audio loading directly from your Google Drive folder:
     </p>
     <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" />
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT (VIDEO REVEAL) -->
+  <!-- SCREEN 2: WHO SAID IT (VISIBLE VIDEO TESTING) -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
       <span id="who-count">Loading...</span>
     </div>
 
+    <!-- Diagnostic Details -->
+    <div id="video-diag" class="diag-box">Connecting to Drive...</div>
+
+    <!-- Visible Video Player with Native Audio Controls -->
     <div class="media-stage">
-      <video id="who-video" playsinline webkit-playsinline preload="auto"></video>
-      <div id="audio-cover" class="audio-cover">
-        <div class="sound-pulse">🔊</div>
-        <div style="font-weight: 700; font-size: 1rem;">Playing Sound...</div>
-      </div>
+      <video id="who-video" controls playsinline webkit-playsinline preload="metadata"></video>
     </div>
 
     <div class="choice-grid-3">
-      <button class="choice-btn option-btn" disabled onclick="submitWhoAnswer('Milad')">
+      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Milad')">
         <span class="emoji">👶</span>
         <span>Milad</span>
       </button>
-      <button class="choice-btn option-btn" disabled onclick="submitWhoAnswer('Maher')">
+      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Maher')">
         <span class="emoji">🧔</span>
         <span>Maher</span>
       </button>
-      <button class="choice-btn option-btn" disabled onclick="submitWhoAnswer('Maisune')">
+      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Maisune')">
         <span class="emoji">👩</span>
         <span>Maisune</span>
       </button>
@@ -453,14 +424,9 @@
     }
     playerName = input.value.trim();
 
-    // Prime the audio context on direct user gesture so iOS/Android won't block unmuted autoplay
-    const video = document.getElementById("who-video");
-    video.muted = false;
-    video.play().then(() => video.pause()).catch(() => {});
-
     const startBtn = document.getElementById("btn-start");
     startBtn.disabled = true;
-    startBtn.innerText = "Loading clips...";
+    startBtn.innerText = "Connecting to Drive...";
 
     try {
       const [vidsRes, photosRes] = await Promise.all([
@@ -472,7 +438,7 @@
       drivePhotos = Array.isArray(photosRes) ? photosRes : [];
 
       if (driveVideos.length === 0) {
-        alert("No video clips matched. Check folder names for 'milad', 'maher', or 'maisune'.");
+        alert("0 videos found. Ensure filenames contain 'milad', 'maher', or 'maisune' and that the folder is shared to Anyone with link.");
         startBtn.disabled = false;
         startBtn.innerText = "Start Game";
         return;
@@ -483,7 +449,7 @@
       renderWho();
     } catch (err) {
       console.error(err);
-      alert("Failed to load clips. Please check connection.");
+      alert("Failed to reach Apps Script. Check network or deployment.");
       startBtn.disabled = false;
       startBtn.innerText = "Start Game";
     }
@@ -494,23 +460,32 @@
 
     const item = driveVideos[whoIdx];
     const video = document.getElementById("who-video");
-    const cover = document.getElementById("audio-cover");
+    const diag = document.getElementById("video-diag");
 
-    cover.classList.remove("revealed");
-    document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = true);
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
     document.getElementById("who-feedback").innerText = "";
 
-    // Direct Google Drive high-throughput media stream
-    video.src = `https://drive.google.com/uc?id=${item.id}&export=download`;
+    // Show diagnostic file info
+    diag.innerHTML = `File: <b>${item.name}</b><br>ID: ${item.id}<br>Expected Answer: <b>${item.answer}</b>`;
+
+    // Direct stream link from Drive
+    const directUrl = `https://drive.google.com/uc?id=${item.id}&export=download`;
+    video.src = directUrl;
     video.muted = false;
     video.load();
 
-    video.oncanplay = () => {
-      video.play().catch(err => {
-        console.warn("Autoplay blocked, unmuting on choice tap:", err);
+    video.onerror = () => {
+      diag.innerHTML += `<br><span style="color:#ef4444;">Video load error. Switching to fallback stream...</span>`;
+      // Alternate high-throughput Google content stream
+      video.src = `https://lh3.googleusercontent.com/d/${item.id}`;
+      video.load();
+    };
+
+    video.onloadeddata = () => {
+      diag.innerHTML += `<br><span style="color:#22c55e;">Video buffered successfully! Tap play if it doesn't autoplay.</span>`;
+      video.play().catch(e => {
+        console.log("Browser paused autoplay pending tap:", e);
       });
-      document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
     };
   }
 
@@ -518,17 +493,9 @@
     if (!driveVideos[whoIdx]) return;
 
     const item = driveVideos[whoIdx];
-    const video = document.getElementById("who-video");
-    const cover = document.getElementById("audio-cover");
     const fb = document.getElementById("who-feedback");
 
     document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = true);
-
-    // Immediately reveal the full uncropped video and replay from beginning
-    cover.classList.add("revealed");
-    video.currentTime = 0;
-    video.muted = false;
-    video.play();
 
     if (choice.toLowerCase() === item.answer.toLowerCase()) {
       score += 100;
@@ -539,10 +506,9 @@
       fb.innerText = `Nope! That was actually ${item.answer}!`;
     }
 
-    // Auto-advance after showing the reveal
     setTimeout(() => {
-      video.pause();
       whoIdx++;
+      document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
       if (whoIdx < driveVideos.length) {
         renderWho();
       } else {
@@ -550,7 +516,7 @@
         document.getElementById("screen-age").classList.remove("hidden");
         renderAge();
       }
-    }, 4500);
+    }, 2500);
   }
 
   function renderAge() {
