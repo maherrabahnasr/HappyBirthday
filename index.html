@@ -102,6 +102,10 @@
       color: white;
     }
 
+    .btn-primary:active {
+      background: var(--primary-active);
+    }
+
     .btn-outline {
       background: transparent;
       border: 2px solid var(--border);
@@ -137,7 +141,6 @@
       word-break: break-all;
     }
 
-    /* Fully Visible Video Frame with Native Controls */
     .media-stage {
       position: relative;
       width: 100%;
@@ -201,36 +204,101 @@
       aspect-ratio: 1 / 1;
       border-radius: 14px;
       overflow: hidden;
-      background: #e2e8f0;
-      margin-bottom: 14px;
+      background: #000;
+      margin-bottom: 12px;
     }
 
     .photo-frame img {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      background: #000;
     }
 
-    .slider-box {
-      text-align: center;
+    /* NEW: High-Touch Month Picker Component */
+    .month-picker-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 14px;
     }
 
-    .slider-box .val {
+    .picker-display-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .stepper-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: white;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s;
+    }
+
+    .stepper-btn:active {
+      background: #f1f5f9;
+    }
+
+    .selected-month-val {
       font-size: 1.6rem;
       font-weight: 800;
       color: var(--primary);
-      margin: 4px 0 8px;
+      min-width: 140px;
+      text-align: center;
     }
 
-    input[type="range"] {
+    /* 6x2 Touch Grid for Months 1-12 */
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
       width: 100%;
-      height: 8px;
-      border-radius: 4px;
-      background: #e2e8f0;
-      accent-color: var(--primary);
-      outline: none;
+    }
+
+    .month-btn {
+      min-height: 42px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .month-btn span.sub {
+      font-size: 0.6rem;
+      color: var(--muted);
+      margin-top: -2px;
+    }
+
+    .month-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 3px 8px rgba(79, 70, 229, 0.35);
+      transform: scale(1.04);
+    }
+
+    .month-btn.active span.sub {
+      color: rgba(255, 255, 255, 0.85);
     }
 
     .status-bar {
@@ -292,30 +360,28 @@
 <div class="container">
   <header>
     <h1>Milad's 1st Birthday! 🎂</h1>
-    <p>Video Playback Test</p>
+    <p>Watch, Listen & Guess</p>
   </header>
 
   <!-- SCREEN 1: LOGIN -->
   <div id="screen-login" class="card">
     <h2 style="font-size: 1.15rem; margin-bottom: 6px;">Join the Games</h2>
     <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; line-height: 1.4;">
-      Enter your name to test video and audio loading directly from your Google Drive folder:
+      Enter your name to play along:
     </p>
     <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" />
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT (VISIBLE VIDEO TESTING) -->
+  <!-- SCREEN 2: WHO SAID IT -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
       <span id="who-count">Loading...</span>
     </div>
 
-    <!-- Diagnostic Details -->
     <div id="video-diag" class="diag-box">Connecting to Drive...</div>
 
-    <!-- Visible Video Player with Native Audio Controls -->
     <div class="media-stage">
       <video id="who-video" controls playsinline webkit-playsinline preload="metadata"></video>
     </div>
@@ -344,14 +410,25 @@
       <span>Part 2: Guess Milad's Age</span>
       <span id="age-count">1/5</span>
     </div>
+
     <div class="photo-frame">
       <img id="age-img" src="" alt="Baby photo" />
     </div>
-    <div class="slider-box">
-      <div style="font-size: 0.9rem; color: var(--muted);">How old was Milad here?</div>
-      <div class="val"><span id="slider-num">6</span> Months</div>
-      <input type="range" id="age-range" min="0" max="12" value="6" oninput="document.getElementById('slider-num').innerText = this.value" />
+
+    <!-- Interactive 1-12 Month Picker -->
+    <div class="month-picker-container">
+      <div class="picker-display-row">
+        <button class="stepper-btn" onclick="stepMonth(-1)">−</button>
+        <div class="selected-month-val"><span id="month-num">6</span> Months</div>
+        <button class="stepper-btn" onclick="stepMonth(1)">+</button>
+      </div>
+
+      <!-- Quick 12-Button Grid -->
+      <div class="month-grid" id="month-grid">
+        <!-- Rendered dynamically 1-12 -->
+      </div>
     </div>
+
     <button class="btn btn-primary" onclick="submitAgeGuess()">Confirm Guess</button>
     <div id="age-feedback" class="feedback"></div>
   </div>
@@ -387,9 +464,37 @@
   let score = 0;
   let whoIdx = 0;
   let ageIdx = 0;
+  let selectedMonth = 6;
 
   let driveVideos = [];
   let drivePhotos = [];
+
+  // Build the 1-12 month touch buttons
+  function initMonthGrid() {
+    const grid = document.getElementById("month-grid");
+    grid.innerHTML = "";
+    for (let i = 1; i <= 12; i++) {
+      const btn = document.createElement("button");
+      btn.className = `month-btn ${i === selectedMonth ? "active" : ""}`;
+      btn.id = `month-btn-${i}`;
+      btn.innerHTML = `${i}<span class="sub">mo</span>`;
+      btn.onclick = () => selectMonth(i);
+      grid.appendChild(btn);
+    }
+  }
+
+  function selectMonth(m) {
+    selectedMonth = Math.max(1, Math.min(12, m));
+    document.getElementById("month-num").innerText = selectedMonth;
+
+    document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
+    const activeBtn = document.getElementById(`month-btn-${selectedMonth}`);
+    if (activeBtn) activeBtn.classList.add("active");
+  }
+
+  function stepMonth(delta) {
+    selectMonth(selectedMonth + delta);
+  }
 
   function getLeaderboardData() {
     const raw = localStorage.getItem("party_leaderboard_json");
@@ -424,6 +529,8 @@
     }
     playerName = input.value.trim();
 
+    initMonthGrid();
+
     const startBtn = document.getElementById("btn-start");
     startBtn.disabled = true;
     startBtn.innerText = "Connecting to Drive...";
@@ -438,7 +545,7 @@
       drivePhotos = Array.isArray(photosRes) ? photosRes : [];
 
       if (driveVideos.length === 0) {
-        alert("0 videos found. Ensure filenames contain 'milad', 'maher', or 'maisune' and that the folder is shared to Anyone with link.");
+        alert("0 videos found. Ensure filenames contain 'milad', 'maher', or 'maisune'.");
         startBtn.disabled = false;
         startBtn.innerText = "Start Game";
         return;
@@ -465,27 +572,19 @@
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
     document.getElementById("who-feedback").innerText = "";
 
-    // Show diagnostic file info
-    diag.innerHTML = `File: <b>${item.name}</b><br>ID: ${item.id}<br>Expected Answer: <b>${item.answer}</b>`;
+    diag.innerHTML = `File: <b>${item.name}</b><br>Expected Answer: <b>${item.answer}</b>`;
 
-    // Direct stream link from Drive
-    const directUrl = `https://drive.google.com/uc?id=${item.id}&export=download`;
-    video.src = directUrl;
+    video.src = `https://drive.google.com/uc?id=${item.id}&export=download`;
     video.muted = false;
     video.load();
 
     video.onerror = () => {
-      diag.innerHTML += `<br><span style="color:#ef4444;">Video load error. Switching to fallback stream...</span>`;
-      // Alternate high-throughput Google content stream
       video.src = `https://lh3.googleusercontent.com/d/${item.id}`;
       video.load();
     };
 
     video.onloadeddata = () => {
-      diag.innerHTML += `<br><span style="color:#22c55e;">Video buffered successfully! Tap play if it doesn't autoplay.</span>`;
-      video.play().catch(e => {
-        console.log("Browser paused autoplay pending tap:", e);
-      });
+      video.play().catch(e => console.log("Autoplay waiting for tap:", e));
     };
   }
 
@@ -528,12 +627,11 @@
     document.getElementById("age-img").src = item.src;
     document.getElementById("age-count").innerText = `${ageIdx + 1}/${drivePhotos.length}`;
     document.getElementById("age-feedback").innerText = "";
-    document.getElementById("age-range").value = 6;
-    document.getElementById("slider-num").innerText = 6;
+    selectMonth(6);
   }
 
   function submitAgeGuess() {
-    const guess = parseInt(document.getElementById("age-range").value, 10);
+    const guess = selectedMonth;
     const actual = drivePhotos[ageIdx].actualMonths;
     const diff = Math.abs(guess - actual);
     const pts = Math.max(0, 100 - (diff * 25));
@@ -542,7 +640,7 @@
     const fb = document.getElementById("age-feedback");
     if (diff === 0) {
       fb.className = "feedback correct";
-      fb.innerText = `Exact match! ${actual} months! (+100)`;
+      fb.innerText = `Exact match! ${actual} months old! (+100)`;
     } else {
       fb.className = "feedback wrong";
       fb.innerText = `He was ${actual} months old! (+${pts} pts)`;
