@@ -42,7 +42,7 @@
 
     .container {
       width: 100%;
-      max-width: 440px;
+      max-width: 460px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -129,22 +129,12 @@
       border-color: var(--primary);
     }
 
-    .diag-box {
-      background: #0f172a;
-      color: #38bdf8;
-      font-family: monospace;
-      font-size: 0.75rem;
-      padding: 8px 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      word-break: break-all;
-    }
-
-    /* Embedded Drive Video Stage */
+    /* Substantially Larger Video Stage */
     .media-stage {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 10;
+      height: 440px;
+      max-height: 60vh;
       background: #000;
       border-radius: 14px;
       overflow: hidden;
@@ -215,45 +205,18 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .picker-display-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      width: 100%;
-    }
-
-    .stepper-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      border: 2px solid var(--border);
-      background: white;
-      font-size: 1.3rem;
-      font-weight: 800;
-      color: var(--text);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .stepper-btn:active {
-      background: #f1f5f9;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
     .selected-month-val {
       font-size: 1.6rem;
       font-weight: 800;
       color: var(--primary);
-      min-width: 140px;
       text-align: center;
     }
 
+    /* 6x2 Touch Grid for Months 1-12 */
     .month-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -262,7 +225,7 @@
     }
 
     .month-btn {
-      min-height: 42px;
+      min-height: 46px;
       border-radius: 10px;
       border: 1.5px solid var(--border);
       background: #f8fafc;
@@ -367,16 +330,14 @@
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT (DIRECT EMBED) -->
+  <!-- SCREEN 2: WHO SAID IT -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
       <span id="who-count">Loading...</span>
     </div>
 
-    <div id="video-diag" class="diag-box">Loading player...</div>
-
-    <!-- Clean iframe player pulling directly from Google Drive -->
+    <!-- Enlarged Media Viewer -->
     <div class="media-stage">
       <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
     </div>
@@ -410,12 +371,9 @@
       <img id="age-img" src="" alt="Baby photo" />
     </div>
 
+    <!-- Month Picker (Direct 12 Buttons Only) -->
     <div class="month-picker-container">
-      <div class="picker-display-row">
-        <button class="stepper-btn" onclick="stepMonth(-1)">−</button>
-        <div class="selected-month-val"><span id="month-num">6</span> Months</div>
-        <button class="stepper-btn" onclick="stepMonth(1)">+</button>
-      </div>
+      <div class="selected-month-val"><span id="month-num">6</span> Months</div>
       <div class="month-grid" id="month-grid"></div>
     </div>
 
@@ -479,10 +437,6 @@
     document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
     const activeBtn = document.getElementById(`month-btn-${selectedMonth}`);
     if (activeBtn) activeBtn.classList.add("active");
-  }
-
-  function stepMonth(delta) {
-    selectMonth(selectedMonth + delta);
   }
 
   function getLeaderboardData() {
@@ -556,14 +510,10 @@
 
     const item = driveVideos[whoIdx];
     const frame = document.getElementById("who-frame");
-    const diag = document.getElementById("video-diag");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
     document.getElementById("who-feedback").innerText = "";
 
-    diag.innerHTML = `File: <b>${item.name}</b>`;
-
-    // Embed Google Drive's native video player (works across all browsers)
     frame.src = `https://drive.google.com/file/d/${item.id}/preview`;
   }
 
