@@ -47,6 +47,7 @@
       flex-direction: column;
       gap: 12px;
       margin: auto 0;
+      position: relative;
     }
 
     header {
@@ -72,6 +73,7 @@
       padding: 18px;
       border: 1px solid var(--border);
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      position: relative;
     }
 
     .hidden {
@@ -102,8 +104,10 @@
       color: white;
     }
 
-    .btn-primary:active {
-      background: var(--primary-active);
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
     }
 
     .btn-outline {
@@ -129,12 +133,11 @@
       border-color: var(--primary);
     }
 
-    /* Substantially Larger Video Stage */
     .media-stage {
       position: relative;
       width: 100%;
-      height: 440px;
-      max-height: 60vh;
+      height: 420px;
+      max-height: 55vh;
       background: #000;
       border-radius: 14px;
       overflow: hidden;
@@ -180,12 +183,6 @@
       transform: scale(0.96);
     }
 
-    .choice-btn:disabled {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-
-    /* Photo Game */
     .photo-frame {
       width: 100%;
       aspect-ratio: 1 / 1;
@@ -210,13 +207,13 @@
     }
 
     .selected-month-val {
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       font-weight: 800;
       color: var(--primary);
       text-align: center;
+      min-height: 32px;
     }
 
-    /* 6x2 Touch Grid for Months 1-12 */
     .month-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -267,16 +264,62 @@
       margin-bottom: 10px;
     }
 
-    .feedback {
+    /* LARGE PROMINENT RESULT OVERLAY */
+    .result-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
       text-align: center;
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-top: 10px;
-      min-height: 24px;
+      color: white;
+      z-index: 50;
+      animation: popIn 0.25s ease-out;
     }
 
-    .correct { color: var(--success); }
-    .wrong { color: var(--error); }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .overlay-icon {
+      font-size: 3.5rem;
+      margin-bottom: 8px;
+    }
+
+    .overlay-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .overlay-title.correct { color: #4ade80; }
+    .overlay-title.wrong { color: #f87171; }
+
+    .overlay-points {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+
+    .overlay-detail {
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      margin-bottom: 24px;
+      width: 100%;
+    }
 
     .leaderboard-list {
       list-style: none;
@@ -337,27 +380,33 @@
       <span id="who-count">Loading...</span>
     </div>
 
-    <!-- Enlarged Media Viewer -->
     <div class="media-stage">
       <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
     </div>
 
     <div class="choice-grid-3">
-      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Milad')">
+      <button class="choice-btn" onclick="submitWhoAnswer('Milad')">
         <span class="emoji">👶</span>
         <span>Milad</span>
       </button>
-      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Maher')">
+      <button class="choice-btn" onclick="submitWhoAnswer('Maher')">
         <span class="emoji">🧔</span>
         <span>Maher</span>
       </button>
-      <button class="choice-btn option-btn" onclick="submitWhoAnswer('Maisune')">
+      <button class="choice-btn" onclick="submitWhoAnswer('Maisune')">
         <span class="emoji">👩</span>
         <span>Maisune</span>
       </button>
     </div>
 
-    <div id="who-feedback" class="feedback"></div>
+    <!-- Video Question Overlay -->
+    <div id="who-overlay" class="result-overlay hidden">
+      <div id="who-icon" class="overlay-icon"></div>
+      <div id="who-title" class="overlay-title"></div>
+      <div id="who-pts" class="overlay-points"></div>
+      <div id="who-detail" class="overlay-detail"></div>
+      <button class="btn btn-primary" onclick="advanceWho()">Next Question ➔</button>
+    </div>
   </div>
 
   <!-- SCREEN 3: GUESS THE AGE -->
@@ -371,14 +420,21 @@
       <img id="age-img" src="" alt="Baby photo" />
     </div>
 
-    <!-- Month Picker (Direct 12 Buttons Only) -->
     <div class="month-picker-container">
-      <div class="selected-month-val"><span id="month-num">6</span> Months</div>
+      <div class="selected-month-val" id="month-display-text">Select a Month 👇</div>
       <div class="month-grid" id="month-grid"></div>
     </div>
 
-    <button class="btn btn-primary" onclick="submitAgeGuess()">Confirm Guess</button>
-    <div id="age-feedback" class="feedback"></div>
+    <button class="btn btn-primary" id="btn-confirm-age" disabled onclick="submitAgeGuess()">Confirm Guess</button>
+
+    <!-- Photo Question Overlay -->
+    <div id="age-overlay" class="result-overlay hidden">
+      <div id="age-icon" class="overlay-icon"></div>
+      <div id="age-title" class="overlay-title"></div>
+      <div id="age-pts" class="overlay-points"></div>
+      <div id="age-detail" class="overlay-detail"></div>
+      <button class="btn btn-primary" id="age-next-btn" onclick="advanceAge()">Next Question ➔</button>
+    </div>
   </div>
 
   <!-- SCREEN 4: FINISH -->
@@ -402,17 +458,14 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
-  const DEFAULT_LEADERBOARD = [
-    { "name": "Baba", "score": 950 },
-    { "name": "Mama", "score": 900 },
-    { "name": "Auntie", "score": 850 }
-  ];
+  // Clean empty leaderboard starter
+  const DEFAULT_LEADERBOARD = [];
 
   let playerName = "";
   let score = 0;
   let whoIdx = 0;
   let ageIdx = 0;
-  let selectedMonth = 6;
+  let selectedMonth = null;
 
   let driveVideos = [];
   let drivePhotos = [];
@@ -422,7 +475,7 @@
     grid.innerHTML = "";
     for (let i = 1; i <= 12; i++) {
       const btn = document.createElement("button");
-      btn.className = `month-btn ${i === selectedMonth ? "active" : ""}`;
+      btn.className = "month-btn";
       btn.id = `month-btn-${i}`;
       btn.innerHTML = `${i}<span class="sub">mo</span>`;
       btn.onclick = () => selectMonth(i);
@@ -431,8 +484,9 @@
   }
 
   function selectMonth(m) {
-    selectedMonth = Math.max(1, Math.min(12, m));
-    document.getElementById("month-num").innerText = selectedMonth;
+    selectedMonth = m;
+    document.getElementById("month-display-text").innerText = `${selectedMonth} Month${selectedMonth > 1 ? "s" : ""} Old`;
+    document.getElementById("btn-confirm-age").disabled = false;
 
     document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
     const activeBtn = document.getElementById(`month-btn-${selectedMonth}`);
@@ -441,14 +495,11 @@
 
   function getLeaderboardData() {
     const raw = localStorage.getItem("party_leaderboard_json");
-    if (!raw) {
-      localStorage.setItem("party_leaderboard_json", JSON.stringify(DEFAULT_LEADERBOARD));
-      return DEFAULT_LEADERBOARD;
-    }
+    if (!raw) return [];
     try {
       return JSON.parse(raw);
     } catch (e) {
-      return DEFAULT_LEADERBOARD;
+      return [];
     }
   }
 
@@ -508,12 +559,12 @@
   function renderWho() {
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
+    document.getElementById("who-overlay").classList.add("hidden");
+
     const item = driveVideos[whoIdx];
     const frame = document.getElementById("who-frame");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
-    document.getElementById("who-feedback").innerText = "";
-
     frame.src = `https://drive.google.com/file/d/${item.id}/preview`;
   }
 
@@ -521,30 +572,40 @@
     if (!driveVideos[whoIdx]) return;
 
     const item = driveVideos[whoIdx];
-    const fb = document.getElementById("who-feedback");
+    const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
-    document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = true);
+    const iconEl = document.getElementById("who-icon");
+    const titleEl = document.getElementById("who-title");
+    const ptsEl = document.getElementById("who-pts");
+    const detailEl = document.getElementById("who-detail");
 
-    if (choice.toLowerCase() === item.answer.toLowerCase()) {
+    if (isCorrect) {
       score += 100;
-      fb.className = "feedback correct";
-      fb.innerText = `Spot on! It was ${item.answer}! (+100)`;
+      iconEl.innerText = "🎉";
+      titleEl.className = "overlay-title correct";
+      titleEl.innerText = "YOU GOT IT!";
+      ptsEl.innerText = "+100 Points";
+      detailEl.innerText = `It was indeed ${item.answer}!`;
     } else {
-      fb.className = "feedback wrong";
-      fb.innerText = `Nope! That was actually ${item.answer}!`;
+      iconEl.innerText = "😅";
+      titleEl.className = "overlay-title wrong";
+      titleEl.innerText = "NOT QUITE!";
+      ptsEl.innerText = "+0 Points";
+      detailEl.innerText = `That sound was actually ${item.answer}!`;
     }
 
-    setTimeout(() => {
-      whoIdx++;
-      document.querySelectorAll(".option-btn").forEach(btn => btn.disabled = false);
-      if (whoIdx < driveVideos.length) {
-        renderWho();
-      } else {
-        document.getElementById("screen-who").classList.add("hidden");
-        document.getElementById("screen-age").classList.remove("hidden");
-        renderAge();
-      }
-    }, 2500);
+    document.getElementById("who-overlay").classList.remove("hidden");
+  }
+
+  function advanceWho() {
+    whoIdx++;
+    if (whoIdx < driveVideos.length) {
+      renderWho();
+    } else {
+      document.getElementById("screen-who").classList.add("hidden");
+      document.getElementById("screen-age").classList.remove("hidden");
+      renderAge();
+    }
   }
 
   function renderAge() {
@@ -552,39 +613,73 @@
       setTimeout(renderAge, 300);
       return;
     }
+
+    document.getElementById("age-overlay").classList.add("hidden");
+
     const item = drivePhotos[ageIdx];
     document.getElementById("age-img").src = item.src;
     document.getElementById("age-count").innerText = `${ageIdx + 1}/${drivePhotos.length}`;
-    document.getElementById("age-feedback").innerText = "";
-    selectMonth(6);
+
+    // Reset selection state
+    selectedMonth = null;
+    document.getElementById("month-display-text").innerText = "Select a Month 👇";
+    document.getElementById("btn-confirm-age").disabled = true;
+    document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
   }
 
   function submitAgeGuess() {
+    if (!selectedMonth) return;
+
     const guess = selectedMonth;
     const actual = drivePhotos[ageIdx].actualMonths;
     const diff = Math.abs(guess - actual);
     const pts = Math.max(0, 100 - (diff * 25));
     score += pts;
 
-    const fb = document.getElementById("age-feedback");
+    const iconEl = document.getElementById("age-icon");
+    const titleEl = document.getElementById("age-title");
+    const ptsEl = document.getElementById("age-pts");
+    const detailEl = document.getElementById("age-detail");
+    const nextBtn = document.getElementById("age-next-btn");
+
     if (diff === 0) {
-      fb.className = "feedback correct";
-      fb.innerText = `Exact match! ${actual} months old! (+100)`;
+      iconEl.innerText = "🎯";
+      titleEl.className = "overlay-title correct";
+      titleEl.innerText = "BULLSEYE!";
+      ptsEl.innerText = "+100 Points";
+      detailEl.innerText = `Exact match! Milad was ${actual} months old!`;
+    } else if (diff === 1) {
+      iconEl.innerText = "👏";
+      titleEl.className = "overlay-title correct";
+      titleEl.innerText = "SO CLOSE!";
+      ptsEl.innerText = `+${pts} Points`;
+      detailEl.innerText = `Milad was actually ${actual} months old!`;
     } else {
-      fb.className = "feedback wrong";
-      fb.innerText = `He was ${actual} months old! (+${pts} pts)`;
+      iconEl.innerText = "📸";
+      titleEl.className = "overlay-title wrong";
+      titleEl.innerText = "NICE TRY!";
+      ptsEl.innerText = `+${pts} Points`;
+      detailEl.innerText = `Milad was actually ${actual} months old in this photo!`;
     }
 
-    setTimeout(() => {
-      ageIdx++;
-      if (ageIdx < drivePhotos.length) {
-        renderAge();
-      } else {
-        document.getElementById("screen-age").classList.add("hidden");
-        document.getElementById("screen-finish").classList.remove("hidden");
-        document.getElementById("final-score").innerText = score;
-      }
-    }, 1400);
+    if (ageIdx + 1 >= drivePhotos.length) {
+      nextBtn.innerText = "See Final Results 🏆";
+    } else {
+      nextBtn.innerText = "Next Photo ➔";
+    }
+
+    document.getElementById("age-overlay").classList.remove("hidden");
+  }
+
+  function advanceAge() {
+    ageIdx++;
+    if (ageIdx < drivePhotos.length) {
+      renderAge();
+    } else {
+      document.getElementById("screen-age").classList.add("hidden");
+      document.getElementById("screen-finish").classList.remove("hidden");
+      document.getElementById("final-score").innerText = score;
+    }
   }
 
   function saveScore() {
@@ -597,6 +692,11 @@
     document.getElementById("screen-leaderboard").classList.remove("hidden");
 
     const list = document.getElementById("leaderboard-items");
+    if (!scores || scores.length === 0) {
+      list.innerHTML = `<li style="text-align:center; padding:12px; color:var(--muted); font-size:0.9rem;">No scores yet. Be the first!</li>`;
+      return;
+    }
+
     list.innerHTML = scores.slice(0, 10).map((entry, idx) => `
       <li class="leaderboard-item">
         <span class="rank">#${idx + 1}</span>
