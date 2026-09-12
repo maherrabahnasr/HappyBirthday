@@ -152,7 +152,7 @@
       background: #000;
     }
 
-    /* Secret Sound Blocker Overlay */
+    /* Secret Sound Blocker Overlay (Active Only Before Guessing) */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -161,7 +161,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 12px;
       color: white;
       z-index: 10;
       transition: opacity 0.3s ease;
@@ -173,8 +173,8 @@
     }
 
     .sound-pulse {
-      width: 72px;
-      height: 72px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.15);
       display: flex;
@@ -186,8 +186,28 @@
 
     @keyframes pulse {
       0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6); }
-      70% { transform: scale(1.08); box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 18px rgba(99, 102, 241, 0); }
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+
+    .btn-replay-sound {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      border-radius: 24px;
+      padding: 9px 20px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-replay-sound:active {
+      transform: scale(0.96);
+      background: rgba(255, 255, 255, 0.25);
     }
 
     .choice-grid-3 {
@@ -220,6 +240,63 @@
     .choice-btn:active {
       background: #f1f5f9;
       transform: scale(0.96);
+    }
+
+    /* NON-BLOCKING VIDEO RESULT BANNER (BELOW VIDEO) */
+    .video-result-banner {
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 14px 16px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      animation: slideUp 0.25s ease-out;
+    }
+
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .banner-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .banner-icon {
+      font-size: 2rem;
+    }
+
+    .banner-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .banner-title.correct { color: #4ade80; }
+    .banner-title.wrong { color: #f87171; }
+
+    .banner-points {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .banner-detail {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 8px 12px;
+      border-radius: 8px;
     }
 
     /* Photo Game */
@@ -304,7 +381,7 @@
       margin-bottom: 10px;
     }
 
-    /* Large Prominent Overlays */
+    /* Modal Overlay for Photo Game */
     .result-overlay {
       position: absolute;
       inset: 0;
@@ -413,26 +490,30 @@
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Start Game</button>
   </div>
 
-  <!-- SCREEN 2: WHO SAID IT (SECRET AUDIO THEN REVEAL) -->
+  <!-- SCREEN 2: WHO SAID IT -->
   <div id="screen-who" class="card hidden">
     <div class="status-bar">
       <span>Part 1: Who Made That Sound?</span>
       <span id="who-count">Loading...</span>
     </div>
 
+    <!-- Video Stage Remains 100% Visible During/After Reveal -->
     <div class="media-stage">
-      <!-- The Video Frame -->
       <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
 
-      <!-- Sound-Only Visual Veil (Hides Video until guess) -->
+      <!-- Sound-Only Visual Veil (Disappears on answer) -->
       <div id="audio-veil" class="audio-veil">
         <div class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em;">Listening Mode</div>
-        <div style="color: #94a3b8; font-size: 0.85rem;">Guess who made that noise below!</div>
+        <button type="button" class="btn-replay-sound" onclick="replayAudio()">
+          🔄 Replay Sound
+        </button>
+        <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 2px;">Guess who made that noise below!</div>
       </div>
     </div>
 
-    <div class="choice-grid-3">
+    <!-- Selection Grid (Hidden once answered) -->
+    <div class="choice-grid-3" id="who-choices">
       <button class="choice-btn" onclick="submitWhoAnswer('Milad')">
         <span class="emoji">👶</span>
         <span>Milad</span>
@@ -447,12 +528,18 @@
       </button>
     </div>
 
-    <!-- Video Result Overlay -->
-    <div id="who-overlay" class="result-overlay hidden">
-      <div id="who-icon" class="overlay-icon"></div>
-      <div id="who-title" class="overlay-title"></div>
-      <div id="who-pts" class="overlay-points"></div>
-      <div id="who-detail" class="overlay-detail"></div>
+    <!-- Non-Blocking Bottom Banner (Appears on answer; keeps video fully visible) -->
+    <div id="who-result-banner" class="video-result-banner hidden">
+      <div class="banner-top-row">
+        <div class="banner-left">
+          <div id="who-banner-icon" class="banner-icon"></div>
+          <div>
+            <div id="who-banner-title" class="banner-title"></div>
+            <div id="who-banner-pts" class="banner-points"></div>
+          </div>
+        </div>
+      </div>
+      <div id="who-banner-detail" class="banner-detail"></div>
       <button class="btn btn-primary" onclick="advanceWho()">Next Question ➔</button>
     </div>
   </div>
@@ -574,12 +661,24 @@
 
     const startBtn = document.getElementById("btn-start");
     startBtn.disabled = true;
-    startBtn.innerText = "Loading from Drive...";
+    startBtn.innerText = "Loading...";
+
+    const fetchOptions = {
+      method: "GET",
+      redirect: "follow",
+      headers: { "Accept": "application/json" }
+    };
 
     try {
       const [vidsRes, photosRes] = await Promise.all([
-        fetch(`${API_URL}?action=getVideos`).then(r => r.json()),
-        fetch(`${API_URL}?action=getPhotos`).then(r => r.json())
+        fetch(`${API_URL}?action=getVideos`, fetchOptions).then(async r => {
+          if (!r.ok) throw new Error(`Video API HTTP ${r.status}`);
+          return r.json();
+        }),
+        fetch(`${API_URL}?action=getPhotos`, fetchOptions).then(async r => {
+          if (!r.ok) throw new Error(`Photos API HTTP ${r.status}`);
+          return r.json();
+        })
       ]);
 
       driveVideos = Array.isArray(vidsRes) ? vidsRes : [];
@@ -606,8 +705,9 @@
   function renderWho() {
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
-    // Reset overlay & veil
-    document.getElementById("who-overlay").classList.add("hidden");
+    // Reset controls: show choice buttons, hide bottom banner, restore audio veil
+    document.getElementById("who-result-banner").classList.add("hidden");
+    document.getElementById("who-choices").classList.remove("hidden");
     document.getElementById("audio-veil").classList.remove("revealed");
 
     const item = driveVideos[whoIdx];
@@ -615,8 +715,15 @@
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
 
-    // Auto-play the clip behind the veil
+    // Load and autoplay behind veil
     frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
+  }
+
+  function replayAudio() {
+    if (!driveVideos[whoIdx]) return;
+    const item = driveVideos[whoIdx];
+    const frame = document.getElementById("who-frame");
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
   }
 
   function submitWhoAnswer(choice) {
@@ -626,34 +733,35 @@
     const frame = document.getElementById("who-frame");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
-    // 1. Remove the veil to reveal the video
+    // 1. Reveal video stage completely
     document.getElementById("audio-veil").classList.add("revealed");
 
-    // 2. Replay the video from the beginning now that it's visible
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
+    // 2. Hide choices and display bottom banner
+    document.getElementById("who-choices").classList.add("hidden");
+    document.getElementById("who-result-banner").classList.remove("hidden");
 
-    const iconEl = document.getElementById("who-icon");
-    const titleEl = document.getElementById("who-title");
-    const ptsEl = document.getElementById("who-pts");
-    const detailEl = document.getElementById("who-detail");
+    // 3. Replay the video from the beginning for the unobstructed visual reveal
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+
+    const iconEl = document.getElementById("who-banner-icon");
+    const titleEl = document.getElementById("who-banner-title");
+    const ptsEl = document.getElementById("who-banner-pts");
+    const detailEl = document.getElementById("who-banner-detail");
 
     if (isCorrect) {
       score += 100;
       iconEl.innerText = "🎉";
-      titleEl.className = "overlay-title correct";
+      titleEl.className = "banner-title correct";
       titleEl.innerText = "YOU GOT IT!";
       ptsEl.innerText = "+100 Points";
       detailEl.innerText = `It was indeed ${item.answer}!`;
     } else {
       iconEl.innerText = "😅";
-      titleEl.className = "overlay-title wrong";
+      titleEl.className = "banner-title wrong";
       titleEl.innerText = "NOT QUITE!";
       ptsEl.innerText = "+0 Points";
       detailEl.innerText = `That sound was actually ${item.answer}!`;
     }
-
-    // Display result overlay
-    document.getElementById("who-overlay").classList.remove("hidden");
   }
 
   function advanceWho() {
@@ -679,7 +787,6 @@
     document.getElementById("age-img").src = item.src;
     document.getElementById("age-count").innerText = `${ageIdx + 1}/${drivePhotos.length}`;
 
-    // Reset selection state
     selectedMonth = null;
     document.getElementById("month-display-text").innerText = "Select a Month 👇";
     document.getElementById("btn-confirm-age").disabled = true;
