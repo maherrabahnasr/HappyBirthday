@@ -133,7 +133,6 @@
       border-color: var(--primary);
     }
 
-    /* Video Media Container */
     .media-stage {
       position: relative;
       width: 100%;
@@ -152,7 +151,6 @@
       background: #000;
     }
 
-    /* Secret Sound Blocker Overlay (Active Only Before Guessing) */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -242,7 +240,6 @@
       transform: scale(0.96);
     }
 
-    /* NON-BLOCKING VIDEO RESULT BANNER (BELOW VIDEO) */
     .video-result-banner {
       background: #0f172a;
       border-radius: 14px;
@@ -299,7 +296,6 @@
       border-radius: 8px;
     }
 
-    /* Photo Game */
     .photo-frame {
       width: 100%;
       aspect-ratio: 1 / 1;
@@ -381,7 +377,6 @@
       margin-bottom: 10px;
     }
 
-    /* Modal Overlay for Photo Game */
     .result-overlay {
       position: absolute;
       inset: 0;
@@ -497,11 +492,9 @@
       <span id="who-count">Loading...</span>
     </div>
 
-    <!-- Video Stage Remains 100% Visible During/After Reveal -->
     <div class="media-stage">
       <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
 
-      <!-- Sound-Only Visual Veil (Disappears on answer) -->
       <div id="audio-veil" class="audio-veil">
         <div class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em;">Listening Mode</div>
@@ -512,7 +505,6 @@
       </div>
     </div>
 
-    <!-- Selection Grid (Hidden once answered) -->
     <div class="choice-grid-3" id="who-choices">
       <button class="choice-btn" onclick="submitWhoAnswer('Milad')">
         <span class="emoji">👶</span>
@@ -528,7 +520,6 @@
       </button>
     </div>
 
-    <!-- Non-Blocking Bottom Banner (Appears on answer; keeps video fully visible) -->
     <div id="who-result-banner" class="video-result-banner hidden">
       <div class="banner-top-row">
         <div class="banner-left">
@@ -562,7 +553,6 @@
 
     <button class="btn btn-primary" id="btn-confirm-age" disabled onclick="submitAgeGuess()">Confirm Guess</button>
 
-    <!-- Photo Result Overlay -->
     <div id="age-overlay" class="result-overlay hidden">
       <div id="age-icon" class="overlay-icon"></div>
       <div id="age-title" class="overlay-title"></div>
@@ -594,6 +584,9 @@
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
   const DEFAULT_LEADERBOARD = [];
+
+  // Remove any previously stored leaderboard cache
+  localStorage.removeItem("party_leaderboard_json");
 
   let playerName = "";
   let score = 0;
@@ -695,8 +688,8 @@
       document.getElementById("screen-who").classList.remove("hidden");
       renderWho();
     } catch (err) {
-      console.error(err);
-      alert("Failed to reach Apps Script. Check network connection.");
+      console.error("Fetch failure:", err);
+      alert("Failed to reach Apps Script. Check deployment settings.");
       startBtn.disabled = false;
       startBtn.innerText = "Start Game";
     }
@@ -705,7 +698,6 @@
   function renderWho() {
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
-    // Reset controls: show choice buttons, hide bottom banner, restore audio veil
     document.getElementById("who-result-banner").classList.add("hidden");
     document.getElementById("who-choices").classList.remove("hidden");
     document.getElementById("audio-veil").classList.remove("revealed");
@@ -714,8 +706,6 @@
     const frame = document.getElementById("who-frame");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
-
-    // Load and autoplay behind veil
     frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
   }
 
@@ -733,14 +723,10 @@
     const frame = document.getElementById("who-frame");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
-    // 1. Reveal video stage completely
     document.getElementById("audio-veil").classList.add("revealed");
-
-    // 2. Hide choices and display bottom banner
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
-    // 3. Replay the video from the beginning for the unobstructed visual reveal
     frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
 
     const iconEl = document.getElementById("who-banner-icon");
