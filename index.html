@@ -706,8 +706,9 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
-  const DEFAULT_LEADERBOARD = [];
+  // Completely wipe any saved local leaderboard storage and reset to empty state
   localStorage.removeItem("party_leaderboard_json");
+  localStorage.setItem("party_leaderboard_json", JSON.stringify([]));
 
   let playerName = "";
   let score = 0;
@@ -718,7 +719,6 @@
   let driveVideos = [];
   let drivePhotos = [];
 
-  // Fisher-Yates Randomization Algorithm
   function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -804,10 +804,8 @@
         })
       ]);
 
-      // Parse and randomize videos
       driveVideos = shuffleArray(Array.isArray(vidsRes) ? vidsRes : []);
 
-      // Parse and randomize photos
       if (photosRes && photosRes.photos) {
         drivePhotos = shuffleArray(photosRes.photos);
         if (photosRes.avatars) {
