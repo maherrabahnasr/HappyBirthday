@@ -133,7 +133,6 @@
       border-color: var(--primary);
     }
 
-    /* Tall Portrait-Optimized Video Stage */
     .media-stage {
       position: relative;
       width: 100%;
@@ -145,7 +144,6 @@
       margin-bottom: 12px;
     }
 
-    /* Framing eliminates Google header/popout icons and focuses the clip */
     .media-stage iframe {
       width: 100%;
       height: calc(100% + 56px);
@@ -155,7 +153,6 @@
       pointer-events: auto;
     }
 
-    /* Prevents accidental taps from triggering Google's controls overlay once revealed */
     .media-stage.revealed-clean iframe {
       pointer-events: none;
     }
@@ -240,8 +237,13 @@
       transition: background 0.1s ease, transform 0.1s ease;
     }
 
-    .choice-btn span.emoji {
-      font-size: 1.45rem;
+    .avatar-img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      border: 1.5px solid var(--border);
     }
 
     .choice-btn:active {
@@ -516,15 +518,15 @@
 
     <div class="choice-grid-3" id="who-choices">
       <button class="choice-btn" onclick="submitWhoAnswer('Milad')">
-        <span class="emoji">👶</span>
+        <img class="avatar-img" src="milad.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/YOUR_MILAD_PHOTO_ID';" alt="Milad" />
         <span>Milad</span>
       </button>
       <button class="choice-btn" onclick="submitWhoAnswer('Maher')">
-        <span class="emoji">🧔</span>
+        <img class="avatar-img" src="maher.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/YOUR_MAHER_PHOTO_ID';" alt="Maher" />
         <span>Maher</span>
       </button>
       <button class="choice-btn" onclick="submitWhoAnswer('Maisune')">
-        <span class="emoji">👩</span>
+        <img class="avatar-img" src="maisune.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/YOUR_MAISUNE_PHOTO_ID';" alt="Maisune" />
         <span>Maisune</span>
       </button>
     </div>
@@ -734,15 +736,12 @@
     const stage = document.getElementById("media-stage-box");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
-    // 1. Reveal stage and disable pointer-events on the iframe so controls stay hidden
     document.getElementById("audio-veil").classList.add("revealed");
     stage.classList.add("revealed-clean");
 
-    // 2. Hide choice buttons and show result banner underneath
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
-    // 3. Restart playback from start for the clear reveal
     frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
 
     const iconEl = document.getElementById("who-banner-icon");
