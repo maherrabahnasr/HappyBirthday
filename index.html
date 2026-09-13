@@ -718,6 +718,15 @@
   let driveVideos = [];
   let drivePhotos = [];
 
+  // Fisher-Yates Randomization Algorithm
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
   function initMonthGrid() {
     const grid = document.getElementById("month-grid");
     grid.innerHTML = "";
@@ -795,20 +804,19 @@
         })
       ]);
 
-      driveVideos = Array.isArray(vidsRes) ? vidsRes : [];
+      // Parse and randomize videos
+      driveVideos = shuffleArray(Array.isArray(vidsRes) ? vidsRes : []);
 
-      // Support payload with separate photos and avatars
+      // Parse and randomize photos
       if (photosRes && photosRes.photos) {
-        drivePhotos = photosRes.photos;
+        drivePhotos = shuffleArray(photosRes.photos);
         if (photosRes.avatars) {
           if (photosRes.avatars.milad) document.getElementById("avatar-milad").src = photosRes.avatars.milad;
           if (photosRes.avatars.maher) document.getElementById("avatar-maher").src = photosRes.avatars.maher;
           if (photosRes.avatars.maisune) document.getElementById("avatar-maisune").src = photosRes.avatars.maisune;
         }
       } else if (Array.isArray(photosRes)) {
-        // Fallback filter if API returned a flat list: exclude the three avatars from the photo game
-        drivePhotos = photosRes.filter(p => {
-          const src = (p.src || "").toLowerCase();
+        const filtered = photosRes.filter(p => {
           const name = (p.name || "").toLowerCase();
           const isAvatar = name.includes("maher") || name.includes("maisune") || (name.includes("milad") && !/\d+/.test(name));
           if (name.includes("maher")) document.getElementById("avatar-maher").src = p.src;
@@ -816,6 +824,7 @@
           if (name.includes("milad") && !/\d+/.test(name)) document.getElementById("avatar-milad").src = p.src;
           return !isAvatar;
         });
+        drivePhotos = shuffleArray(filtered);
       }
 
       if (driveVideos.length === 0) {
