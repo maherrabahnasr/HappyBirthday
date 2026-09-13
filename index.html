@@ -36,16 +36,16 @@
       justify-content: center;
       min-height: 100vh;
       min-height: 100dvh;
-      padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+      padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
       overflow-x: hidden;
     }
 
     .container {
       width: 100%;
-      max-width: 460px;
+      max-width: 440px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       margin: auto 0;
       position: relative;
     }
@@ -56,21 +56,21 @@
     }
 
     header h1 {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
       color: var(--primary);
     }
 
     header p {
       color: var(--muted);
-      font-size: 0.85rem;
-      margin-top: 2px;
+      font-size: 0.8rem;
+      margin-top: 1px;
     }
 
     .card {
       background: var(--card);
       border-radius: var(--radius);
-      padding: 18px;
+      padding: 16px;
       border: 1px solid var(--border);
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
       position: relative;
@@ -82,7 +82,7 @@
 
     .btn {
       width: 100%;
-      min-height: 50px;
+      min-height: 48px;
       padding: 12px 16px;
       border: none;
       border-radius: 14px;
@@ -119,7 +119,7 @@
 
     input[type="text"] {
       width: 100%;
-      min-height: 50px;
+      min-height: 48px;
       padding: 12px 16px;
       border: 2px solid var(--border);
       border-radius: 14px;
@@ -133,22 +133,31 @@
       border-color: var(--primary);
     }
 
+    /* Tall Portrait-Optimized Video Stage */
     .media-stage {
       position: relative;
       width: 100%;
-      height: 380px;
-      max-height: 50vh;
+      height: 400px;
+      max-height: 52vh;
       background: #000;
       border-radius: 14px;
       overflow: hidden;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
-    iframe {
+    /* Framing eliminates Google header/popout icons and focuses the clip */
+    .media-stage iframe {
       width: 100%;
-      height: 100%;
+      height: calc(100% + 56px);
+      margin-top: -56px;
       border: none;
       background: #000;
+      pointer-events: auto;
+    }
+
+    /* Prevents accidental taps from triggering Google's controls overlay once revealed */
+    .media-stage.revealed-clean iframe {
+      pointer-events: none;
     }
 
     .audio-veil {
@@ -171,8 +180,8 @@
     }
 
     .sound-pulse {
-      width: 70px;
-      height: 70px;
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.15);
       display: flex;
@@ -215,8 +224,8 @@
     }
 
     .choice-btn {
-      min-height: 72px;
-      padding: 10px 4px;
+      min-height: 68px;
+      padding: 8px 4px;
       border: 2px solid var(--border);
       border-radius: 14px;
       background: white;
@@ -232,7 +241,7 @@
     }
 
     .choice-btn span.emoji {
-      font-size: 1.5rem;
+      font-size: 1.45rem;
     }
 
     .choice-btn:active {
@@ -243,11 +252,11 @@
     .video-result-banner {
       background: #0f172a;
       border-radius: 14px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       color: white;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       animation: slideUp 0.25s ease-out;
     }
 
@@ -269,11 +278,11 @@
     }
 
     .banner-icon {
-      font-size: 2rem;
+      font-size: 1.8rem;
     }
 
     .banner-title {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 800;
       line-height: 1.2;
     }
@@ -282,17 +291,17 @@
     .banner-title.wrong { color: #f87171; }
 
     .banner-points {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: #94a3b8;
     }
 
     .banner-detail {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: #f1f5f9;
       background: rgba(255, 255, 255, 0.08);
-      padding: 8px 12px;
+      padding: 8px 10px;
       border-radius: 8px;
     }
 
@@ -315,16 +324,16 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
     .selected-month-val {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 800;
       color: var(--primary);
       text-align: center;
-      min-height: 32px;
+      min-height: 28px;
     }
 
     .month-grid {
@@ -335,7 +344,7 @@
     }
 
     .month-btn {
-      min-height: 46px;
+      min-height: 44px;
       border-radius: 10px;
       border: 1.5px solid var(--border);
       background: #f8fafc;
@@ -351,7 +360,7 @@
     }
 
     .month-btn span.sub {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       color: var(--muted);
       margin-top: -2px;
     }
@@ -374,7 +383,7 @@
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .result-overlay {
@@ -492,7 +501,7 @@
       <span id="who-count">Loading...</span>
     </div>
 
-    <div class="media-stage">
+    <div class="media-stage" id="media-stage-box">
       <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
 
       <div id="audio-veil" class="audio-veil">
@@ -584,8 +593,6 @@
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
   const DEFAULT_LEADERBOARD = [];
-
-  // Remove any previously stored leaderboard cache
   localStorage.removeItem("party_leaderboard_json");
 
   let playerName = "";
@@ -698,6 +705,9 @@
   function renderWho() {
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
+    const stage = document.getElementById("media-stage-box");
+    stage.classList.remove("revealed-clean");
+
     document.getElementById("who-result-banner").classList.add("hidden");
     document.getElementById("who-choices").classList.remove("hidden");
     document.getElementById("audio-veil").classList.remove("revealed");
@@ -721,12 +731,18 @@
 
     const item = driveVideos[whoIdx];
     const frame = document.getElementById("who-frame");
+    const stage = document.getElementById("media-stage-box");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
+    // 1. Reveal stage and disable pointer-events on the iframe so controls stay hidden
     document.getElementById("audio-veil").classList.add("revealed");
+    stage.classList.add("revealed-clean");
+
+    // 2. Hide choice buttons and show result banner underneath
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
+    // 3. Restart playback from start for the clear reveal
     frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
 
     const iconEl = document.getElementById("who-banner-icon");
