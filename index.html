@@ -207,32 +207,32 @@
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
     }
 
+    /* Clean, Large Native Video Stage */
     .media-stage {
       position: relative;
       width: 100%;
-      height: 390px;
-      max-height: 52vh;
-      background: #111;
+      height: 420px;
+      max-height: 56vh;
+      background: #000000;
       border-radius: 20px;
       overflow: hidden;
       margin-bottom: 14px;
       border: 3px solid #bfdbfe;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .media-stage iframe {
+    .media-stage video {
       width: 100%;
-      height: calc(100% + 56px);
-      margin-top: -56px;
-      border: none;
+      height: 100%;
+      object-fit: contain;
       background: #000;
-      pointer-events: auto;
+      display: block;
     }
 
-    .media-stage.revealed-clean iframe {
-      pointer-events: none;
-    }
-
+    /* Listening Mode Veil */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -617,7 +617,11 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
+      <!-- Clean HTML5 Video Tag with Google Drive direct stream -->
+      <video id="who-video" playsinline webkit-playsinline preload="auto"></video>
+
+      <!-- Clean fallback iframe if needed -->
+      <iframe id="who-frame" class="hidden" allow="autoplay; encrypted-media; fullscreen"></iframe>
 
       <div id="audio-veil" class="audio-veil">
         <div class="sound-pulse">🔊</div>
@@ -706,7 +710,6 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
-  // Completely wipe any saved local leaderboard storage and reset to empty state
   localStorage.removeItem("party_leaderboard_json");
   localStorage.setItem("party_leaderboard_json", JSON.stringify([]));
 
@@ -846,42 +849,68 @@
   function renderWho() {
     if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
 
-    const stage = document.getElementById("media-stage-box");
-    stage.classList.remove("revealed-clean");
-
     document.getElementById("who-result-banner").classList.add("hidden");
     document.getElementById("who-choices").classList.remove("hidden");
     document.getElementById("audio-veil").classList.remove("revealed");
 
     const item = driveVideos[whoIdx];
+    const video = document.getElementById("who-video");
     const frame = document.getElementById("who-frame");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
+
+    // Clean direct stream source without Google UI controls
+    video.src = `https://drive.google.com/uc?export=download&id=${item.id}`;
+    video.currentTime = 0;
+    
+    // Auto-play the audio in listening mode
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Fallback to preview iframe only if direct stream is restricted on older browsers
+        frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
+        frame.classList.remove("hidden");
+        video.classList.add("hidden");
+      });
+    }
   }
 
   function replayAudio() {
     if (!driveVideos[whoIdx]) return;
-    const item = driveVideos[whoIdx];
+    const video = document.getElementById("who-video");
     const frame = document.getElementById("who-frame");
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+
+    if (!video.classList.contains("hidden")) {
+      video.currentTime = 0;
+      video.play();
+    } else {
+      const item = driveVideos[whoIdx];
+      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+    }
   }
 
   function submitWhoAnswer(choice) {
     if (!driveVideos[whoIdx]) return;
 
     const item = driveVideos[whoIdx];
+    const video = document.getElementById("who-video");
     const frame = document.getElementById("who-frame");
-    const stage = document.getElementById("media-stage-box");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
+    // 1. Reveal video stage
     document.getElementById("audio-veil").classList.add("revealed");
-    stage.classList.add("revealed-clean");
 
+    // 2. Hide choices and display bottom banner
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+    // 3. Replay clean video from beginning without controls
+    if (!video.classList.contains("hidden")) {
+      video.currentTime = 0;
+      video.play();
+    } else {
+      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+    }
 
     const iconEl = document.getElementById("who-banner-icon");
     const titleEl = document.getElementById("who-banner-title");
@@ -905,6 +934,10 @@
   }
 
   function advanceWho() {
+    const video = document.getElementById("who-video");
+    video.pause();
+    video.src = "";
+
     whoIdx++;
     if (whoIdx < driveVideos.length) {
       renderWho();
