@@ -7,7 +7,6 @@
   <meta name="theme-color" content="#3a86ff" />
   <title>Milad's 1st Birthday Games! 🎈</title>
 
-  <!-- Fun, Rounded Kid-Friendly Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
@@ -19,8 +18,6 @@
       --secondary: #ffca3a;
       --secondary-shadow: #d4a017;
       --accent: #06b6d4;
-      --accent-shadow: #0891b2;
-      --blue-light: #60a5fa;
       --card-bg: rgba(255, 255, 255, 0.95);
       --card-border: #bfdbfe;
       --text: #1e293b;
@@ -49,7 +46,6 @@
       position: relative;
     }
 
-    /* Ambient Floating Party Balloons */
     .balloon-bg {
       position: fixed;
       inset: 0;
@@ -144,7 +140,6 @@
       display: none !important;
     }
 
-    /* Chunky Bubbly Buttons */
     .btn {
       width: 100%;
       min-height: 52px;
@@ -212,7 +207,6 @@
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
     }
 
-    /* Video Frame Stage */
     .media-stage {
       position: relative;
       width: 100%;
@@ -239,7 +233,6 @@
       pointer-events: none;
     }
 
-    /* Listening Mode Veil */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -299,7 +292,6 @@
       background: rgba(255, 255, 255, 0.35);
     }
 
-    /* 3D Round Avatar Guess Buttons */
     .choice-grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -341,7 +333,6 @@
       background: #f0f9ff;
     }
 
-    /* Bubbly Answer Result Banner */
     .video-result-banner {
       background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
       border-radius: 20px;
@@ -395,7 +386,6 @@
       border-radius: 12px;
     }
 
-    /* Photo Frame Game */
     .photo-frame {
       width: 100%;
       aspect-ratio: 1 / 1;
@@ -492,7 +482,6 @@
       font-weight: 800;
     }
 
-    /* Modal Overlay for Photo Game */
     .result-overlay {
       position: absolute;
       inset: 0;
@@ -595,7 +584,6 @@
 </head>
 <body>
 
-<!-- Ambient Floating Party Balloons -->
 <div class="balloon-bg">
   <div class="balloon b1">🎈</div>
   <div class="balloon b2">🎉</div>
@@ -643,15 +631,15 @@
 
     <div class="choice-grid-3" id="who-choices">
       <button class="choice-btn" onclick="submitWhoAnswer('Milad')">
-        <img class="avatar-img" src="milad.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/YOUR_MILAD_PHOTO_ID';" alt="Milad" />
+        <img class="avatar-img" id="avatar-milad" src="milad.png" alt="Milad" />
         <span>Milad</span>
       </button>
       <button class="choice-btn" onclick="submitWhoAnswer('Maher')">
-        <img class="avatar-img" src="maher.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/YOUR_MAHER_PHOTO_ID';" alt="Maher" />
+        <img class="avatar-img" id="avatar-maher" src="maher.png" alt="Maher" />
         <span>Maher</span>
       </button>
       <button class="choice-btn" onclick="submitWhoAnswer('Maisune')">
-        <img class="avatar-img" src="maisune.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/YOUR_MAISUNE_PHOTO_ID';" alt="Maisune" />
+        <img class="avatar-img" id="avatar-maisune" src="maisune.png" alt="Maisune" />
         <span>Maisune</span>
       </button>
     </div>
@@ -808,10 +796,30 @@
       ]);
 
       driveVideos = Array.isArray(vidsRes) ? vidsRes : [];
-      drivePhotos = Array.isArray(photosRes) ? photosRes : [];
+
+      // Support payload with separate photos and avatars
+      if (photosRes && photosRes.photos) {
+        drivePhotos = photosRes.photos;
+        if (photosRes.avatars) {
+          if (photosRes.avatars.milad) document.getElementById("avatar-milad").src = photosRes.avatars.milad;
+          if (photosRes.avatars.maher) document.getElementById("avatar-maher").src = photosRes.avatars.maher;
+          if (photosRes.avatars.maisune) document.getElementById("avatar-maisune").src = photosRes.avatars.maisune;
+        }
+      } else if (Array.isArray(photosRes)) {
+        // Fallback filter if API returned a flat list: exclude the three avatars from the photo game
+        drivePhotos = photosRes.filter(p => {
+          const src = (p.src || "").toLowerCase();
+          const name = (p.name || "").toLowerCase();
+          const isAvatar = name.includes("maher") || name.includes("maisune") || (name.includes("milad") && !/\d+/.test(name));
+          if (name.includes("maher")) document.getElementById("avatar-maher").src = p.src;
+          if (name.includes("maisune")) document.getElementById("avatar-maisune").src = p.src;
+          if (name.includes("milad") && !/\d+/.test(name)) document.getElementById("avatar-milad").src = p.src;
+          return !isAvatar;
+        });
+      }
 
       if (driveVideos.length === 0) {
-        alert("0 videos found. Ensure filenames contain 'milad', 'maher', or 'maisune'.");
+        alert("0 videos found. Check Apps Script.");
         startBtn.disabled = false;
         startBtn.innerText = "Let's Play! 🚀";
         return;
