@@ -209,7 +209,6 @@
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
     }
 
-    /* Video Frame Stage */
     .media-stage {
       position: relative;
       width: 100%;
@@ -223,15 +222,14 @@
       box-shadow: 0 8px 18px rgba(0,0,0,0.1);
     }
 
-    .media-stage iframe {
+    .media-stage video {
       width: 100%;
       height: 100%;
-      border: none;
+      object-fit: contain;
       background: #000;
       display: block;
     }
 
-    /* Sound-Only Listening Veil */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -240,11 +238,12 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 14px;
       color: white;
       z-index: 10;
       transition: opacity 0.3s ease;
       cursor: pointer;
+      user-select: none;
     }
 
     .audio-veil.revealed {
@@ -253,14 +252,14 @@
     }
 
     .sound-pulse {
-      width: 76px;
-      height: 76px;
+      width: 86px;
+      height: 86px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.25);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.3rem;
+      font-size: 2.8rem;
       animation: bubblyPulse 1.5s infinite ease-in-out;
       box-shadow: 0 0 0 0 rgba(254, 240, 138, 0.6);
     }
@@ -272,24 +271,24 @@
     }
 
     .btn-replay-sound {
-      background: rgba(255, 255, 255, 0.22);
-      color: #ffffff;
-      border: 2px solid rgba(255, 255, 255, 0.45);
+      background: #ffca3a;
+      color: #1e293b;
+      border: none;
       border-radius: 25px;
-      padding: 10px 22px;
-      font-size: 0.95rem;
+      padding: 12px 26px;
+      font-size: 1.05rem;
       font-weight: 800;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      gap: 8px;
+      box-shadow: 0 4px 0 #d4a017, 0 6px 14px rgba(0,0,0,0.2);
       transition: all 0.15s ease;
     }
 
     .btn-replay-sound:active {
-      transform: scale(0.94);
-      background: rgba(255, 255, 255, 0.35);
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #d4a017;
     }
 
     .choice-grid-3 {
@@ -617,17 +616,17 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <!-- Universal, Cross-Browser Drive Player -->
-      <iframe id="who-frame" allow="autoplay; encrypted-media; fullscreen"></iframe>
+      <!-- Native HTML5 video tag with WebKit mobile inline permissions -->
+      <video id="who-video" playsinline webkit-playsinline x5-playsinline preload="auto"></video>
 
-      <!-- Sound-Only Listening Veil -->
-      <div id="audio-veil" class="audio-veil" onclick="replayAudio()">
+      <!-- Interactive veil for guaranteed audio initiation on iOS -->
+      <div id="audio-veil" class="audio-veil" onclick="playAudioByUser()">
         <div class="sound-pulse">🔊</div>
-        <div style="font-weight: 800; font-size: 1.25rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
-        <button type="button" class="btn-replay-sound" id="btn-sound-action" onclick="event.stopPropagation(); replayAudio();">
-          ▶ Play Sound
+        <div style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
+        <button type="button" class="btn-replay-sound" id="btn-sound-action" onclick="event.stopPropagation(); playAudioByUser();">
+          ▶ Tap to Play Sound
         </button>
-        <div style="color: #bfdbfe; font-size: 0.88rem; font-weight: 700; margin-top: 2px;">Guess who made that noise below! 👇</div>
+        <div style="color: #bfdbfe; font-size: 0.88rem; font-weight: 700; margin-top: 4px;">Guess who made that noise below! 👇</div>
       </div>
     </div>
 
@@ -778,6 +777,15 @@
     }
     playerName = input.value.trim();
 
+    // Prime WebKit audio context on the initial physical user touch
+    const video = document.getElementById("who-video");
+    video.muted = false;
+    video.volume = 1.0;
+    const prime = video.play();
+    if (prime !== undefined) {
+      prime.then(() => video.pause()).catch(() => {});
+    }
+
     initMonthGrid();
 
     const startBtn = document.getElementById("btn-start");
@@ -849,35 +857,59 @@
     document.getElementById("audio-veil").classList.remove("revealed");
 
     const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
+    const video = document.getElementById("who-video");
     const playBtn = document.getElementById("btn-sound-action");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
-    playBtn.innerText = "🔄 Replay Sound";
 
-    // Load drive video preview with autoplay
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
+    // Direct streaming URL compatible with WebKit without third-party cookie blocking
+    video.src = `https://drive.usercontent.google.com/download?id=${item.id}&export=view&authuser=0`;
+    video.currentTime = 0;
+    video.muted = false;
+    video.volume = 1.0;
+    video.load();
+
+    playBtn.innerText = "▶ Tap to Play Sound";
+
+    // Attempt autoplay; if Safari suppresses unprompted autoplay, the button remains ready for the tap
+    const p = video.play();
+    if (p !== undefined) {
+      p.then(() => {
+        playBtn.innerText = "🔄 Replay Sound";
+      }).catch(() => {
+        playBtn.innerText = "▶ Tap to Play Sound";
+      });
+    }
   }
 
-  function replayAudio() {
-    if (!driveVideos[whoIdx]) return;
-    const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
+  // Physical touch handler directly bound to user interaction
+  function playAudioByUser() {
+    const video = document.getElementById("who-video");
     const playBtn = document.getElementById("btn-sound-action");
 
-    // Force instantaneous restart across Safari and Chrome
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
-    playBtn.innerText = "Playing... 🔊";
-    setTimeout(() => {
-      playBtn.innerText = "🔄 Replay Sound";
-    }, 1200);
+    video.muted = false;
+    video.volume = 1.0;
+    video.currentTime = 0;
+
+    const p = video.play();
+    if (p !== undefined) {
+      p.then(() => {
+        playBtn.innerText = "🔄 Replay Sound";
+      }).catch(err => {
+        // If the download link times out, reload and play
+        video.load();
+        video.play().then(() => {
+          playBtn.innerText = "🔄 Replay Sound";
+        }).catch(e => console.error("Playback error:", e));
+      });
+    }
   }
 
   function submitWhoAnswer(choice) {
     if (!driveVideos[whoIdx]) return;
 
     const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
+    const video = document.getElementById("who-video");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
     // 1. Reveal video stage
@@ -887,8 +919,10 @@
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
-    // 3. Restart playback from beginning for visual reveal
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+    // 3. Replay clean video from beginning with full audio
+    video.muted = false;
+    video.currentTime = 0;
+    video.play().catch(() => {});
 
     const iconEl = document.getElementById("who-banner-icon");
     const titleEl = document.getElementById("who-banner-title");
@@ -912,8 +946,9 @@
   }
 
   function advanceWho() {
-    const frame = document.getElementById("who-frame");
-    frame.src = "about:blank";
+    const video = document.getElementById("who-video");
+    video.pause();
+    video.src = "";
 
     whoIdx++;
     if (whoIdx < driveVideos.length) {
