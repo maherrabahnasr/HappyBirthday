@@ -209,28 +209,36 @@
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
     }
 
+    /* Video Frame Stage: Full-bleed vertical framing */
     .media-stage {
       position: relative;
       width: 100%;
-      height: 400px;
-      max-height: 54vh;
+      height: 460px;
+      max-height: 58vh;
       background: #000000;
-      border-radius: 20px;
+      border-radius: 22px;
       overflow: hidden;
       margin-bottom: 14px;
       border: 3px solid #bfdbfe;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
 
+    /* Zooms the 16:9 player to fill height, pushes Google bars off-screen, and blocks HUD clicks */
     .media-stage iframe {
-      width: 100%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
       height: 100%;
+      aspect-ratio: 16 / 9;
+      min-width: 100%;
+      transform: translate(-50%, -50%);
       border: none;
       background: #000;
       display: block;
+      pointer-events: none;
     }
 
-    /* Sound-Only Listening Veil with Click Pass-Through */
+    /* Listening Veil with Progress Bar */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -242,8 +250,9 @@
       gap: 12px;
       color: white;
       z-index: 10;
-      /* Pass touches straight through to Google's play button underneath */
-      pointer-events: none;
+      padding: 18px;
+      text-align: center;
+      transition: opacity 0.3s ease;
       user-select: none;
     }
 
@@ -252,16 +261,20 @@
     }
 
     .sound-pulse {
-      width: 84px;
-      height: 84px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.22);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 2.6rem;
-      animation: bubblyPulse 1.5s infinite ease-in-out;
       box-shadow: 0 0 0 0 rgba(254, 240, 138, 0.6);
+      transition: transform 0.2s ease;
+    }
+
+    .sound-pulse.playing {
+      animation: bubblyPulse 1.4s infinite ease-in-out;
     }
 
     @keyframes bubblyPulse {
@@ -270,17 +283,60 @@
       100% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(254, 240, 138, 0); }
     }
 
-    .tap-cue {
+    .btn-sound-control {
       background: #ffca3a;
       color: #1e293b;
-      border-radius: 20px;
-      padding: 10px 20px;
-      font-size: 1rem;
+      border: none;
+      border-radius: 24px;
+      padding: 12px 28px;
+      font-size: 1.05rem;
       font-weight: 800;
-      box-shadow: 0 4px 0 #d4a017;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 0 #d4a017, 0 6px 14px rgba(0,0,0,0.2);
+      transition: all 0.12s ease;
+    }
+
+    .btn-sound-control:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #d4a017;
+    }
+
+    .audio-progress-wrap {
+      width: 82%;
+      max-width: 260px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       gap: 6px;
+      margin-top: 4px;
+    }
+
+    .audio-progress-bar {
+      width: 100%;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      position: relative;
+    }
+
+    .audio-progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8 0%, #4ade80 100%);
+      border-radius: 12px;
+      transition: width 0.1s linear;
+    }
+
+    .audio-timer-text {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #fde047;
+      letter-spacing: 0.02em;
     }
 
     .choice-grid-3 {
@@ -375,6 +431,34 @@
       background: rgba(255, 255, 255, 0.12);
       padding: 10px 14px;
       border-radius: 12px;
+    }
+
+    .banner-btn-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .btn-watch-again {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 16px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 1;
+      transition: all 0.1s ease;
+    }
+
+    .btn-watch-again:active {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(0.97);
     }
 
     .photo-frame {
@@ -617,15 +701,26 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <!-- Universal, Cross-Platform Drive Player with Wildcard Autoplay Delegation -->
+      <!-- Full-bleed centered embed -->
       <iframe id="who-frame" allow="autoplay *; encrypted-media *; fullscreen *"></iframe>
 
-      <!-- Sound-Only Listening Veil -->
+      <!-- Sound-Only Listening Veil with Progress Controls -->
       <div id="audio-veil" class="audio-veil">
-        <div class="sound-pulse">🔊</div>
+        <div id="sound-pulse-icon" class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
-        <div class="tap-cue">▶ Tap Center to Play / Replay</div>
-        <div style="color: #bfdbfe; font-size: 0.85rem; font-weight: 700;">Guess who made that noise below! 👇</div>
+        
+        <button type="button" class="btn-sound-control" id="btn-sound-action" onclick="toggleAudioPlayback()">
+          ▶ Play Sound
+        </button>
+
+        <div class="audio-progress-wrap hidden" id="progress-container">
+          <div class="audio-progress-bar">
+            <div class="audio-progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="audio-timer-text" id="timer-text">Playing: 0s left</div>
+        </div>
+
+        <div style="color: #bfdbfe; font-size: 0.85rem; font-weight: 700;">Tap play, listen closely, then guess below! 👇</div>
       </div>
     </div>
 
@@ -653,7 +748,12 @@
         </div>
       </div>
       <div id="who-banner-detail" class="banner-detail"></div>
-      <button class="btn btn-primary" onclick="advanceWho()">Next Question ➔</button>
+      
+      <!-- Action buttons: Replay cleanly or proceed -->
+      <div class="banner-btn-row">
+        <button class="btn-watch-again" onclick="replayRevealVideo()">🔄 Watch Again</button>
+        <button class="btn btn-primary" style="flex: 1.3;" onclick="advanceWho()">Next Question ➔</button>
+      </div>
     </div>
   </div>
 
@@ -662,357 +762,4 @@
     <div class="status-bar">
       <span>Part 2: Guess Milad's Age! 📸</span>
       <span class="status-pill" id="age-count">1/5</span>
-    </div>
-
-    <div class="photo-frame">
-      <img id="age-img" src="" alt="Baby photo" />
-    </div>
-
-    <div class="month-picker-container">
-      <div class="selected-month-val" id="month-display-text">Select a Month 👇</div>
-      <div class="month-grid" id="month-grid"></div>
-    </div>
-
-    <button class="btn btn-primary" id="btn-confirm-age" disabled onclick="submitAgeGuess()">Confirm Guess 🎯</button>
-
-    <div id="age-overlay" class="result-overlay hidden">
-      <div id="age-icon" class="overlay-icon"></div>
-      <div id="age-title" class="overlay-title"></div>
-      <div id="age-pts" class="overlay-points"></div>
-      <div id="age-detail" class="overlay-detail"></div>
-      <button class="btn btn-primary" id="age-next-btn" onclick="advanceAge()">Next Question ➔</button>
-    </div>
-  </div>
-
-  <!-- SCREEN 4: FINISH -->
-  <div id="screen-finish" class="card hidden" style="text-align: center;">
-    <div style="font-size: 3.5rem; margin-bottom: 4px;">🎉🎈🥳</div>
-    <h2 style="font-size: 1.6rem; color: #1d4ed8;">Hip Hip Hooray!</h2>
-    <p style="color: var(--muted); margin-top: 4px; font-weight: 700; font-size: 0.95rem;">You completed all the games!</p>
-    <div style="font-size: 3.2rem; font-weight: 800; color: #2563eb; margin: 12px 0; text-shadow: 2px 2px 0 #dbeafe;">
-      <span id="final-score">0</span> <span style="font-size: 1.2rem; color: #64748b;">pts</span>
-    </div>
-    <button id="btn-save" class="btn btn-primary" onclick="saveScore()">Submit to Leaderboard 🏆</button>
-  </div>
-
-  <!-- SCREEN 5: LEADERBOARD -->
-  <div id="screen-leaderboard" class="card hidden">
-    <h3 style="text-align: center; margin-bottom: 8px; font-size: 1.4rem; color: #1d4ed8;">🏆 Birthday Party Leaders 🎈</h3>
-    <ul id="leaderboard-items" class="leaderboard-list"></ul>
-    <button class="btn btn-outline" onclick="location.reload()">Play Again 🔄</button>
-  </div>
-</div>
-
-<script>
-  const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
-
-  let playerName = "";
-  let score = 0;
-  let whoIdx = 0;
-  let ageIdx = 0;
-  let selectedMonth = null;
-
-  let driveVideos = [];
-  let drivePhotos = [];
-
-  function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
-  function initMonthGrid() {
-    const grid = document.getElementById("month-grid");
-    grid.innerHTML = "";
-    for (let i = 1; i <= 12; i++) {
-      const btn = document.createElement("button");
-      btn.className = "month-btn";
-      btn.id = `month-btn-${i}`;
-      btn.innerHTML = `${i}<span class="sub">mo</span>`;
-      btn.onclick = () => selectMonth(i);
-      grid.appendChild(btn);
-    }
-  }
-
-  function selectMonth(m) {
-    selectedMonth = m;
-    document.getElementById("month-display-text").innerText = `${selectedMonth} Month${selectedMonth > 1 ? "s" : ""} Old! ✨`;
-    document.getElementById("btn-confirm-age").disabled = false;
-
-    document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
-    const activeBtn = document.getElementById(`month-btn-${selectedMonth}`);
-    if (activeBtn) activeBtn.classList.add("active");
-  }
-
-  function getLocalLeaderboard() {
-    const raw = localStorage.getItem("party_leaderboard_json");
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveLocalLeaderboard(name, finalScore) {
-    const scores = getLocalLeaderboard();
-    scores.push({
-      name: name,
-      score: finalScore,
-      timestamp: new Date().toISOString()
-    });
-    scores.sort((a, b) => b.score - a.score);
-    localStorage.setItem("party_leaderboard_json", JSON.stringify(scores));
-    return scores;
-  }
-
-  // Auto-retry fetch helper preventing Google Apps Script cold-start drops
-  async function fetchWithRetry(url, retries = 2) {
-    for (let i = 0; i <= retries; i++) {
-      try {
-        const res = await fetch(url, { method: "GET", redirect: "follow" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-      } catch (err) {
-        if (i === retries) throw err;
-        await new Promise(r => setTimeout(r, 600));
-      }
-    }
-  }
-
-  async function initApp() {
-    const input = document.getElementById("player-name");
-    if (!input.value.trim()) {
-      alert("Please enter your name!");
-      return;
-    }
-    playerName = input.value.trim();
-
-    initMonthGrid();
-
-    const startBtn = document.getElementById("btn-start");
-    startBtn.disabled = true;
-    startBtn.innerText = "Getting Party Ready... 🎈";
-
-    try {
-      const data = await fetchWithRetry(`${API_URL}?action=initGame`);
-
-      driveVideos = shuffleArray(data.videos || []);
-      drivePhotos = shuffleArray(data.photos || []);
-
-      if (data.avatars) {
-        if (data.avatars.milad) document.getElementById("avatar-milad").src = data.avatars.milad;
-        if (data.avatars.maher) document.getElementById("avatar-maher").src = data.avatars.maher;
-        if (data.avatars.maisune) document.getElementById("avatar-maisune").src = data.avatars.maisune;
-      }
-
-      if (driveVideos.length === 0) {
-        alert("0 videos found. Check Apps Script.");
-        startBtn.disabled = false;
-        startBtn.innerText = "Let's Play! 🚀";
-        return;
-      }
-
-      document.getElementById("screen-login").classList.add("hidden");
-      document.getElementById("screen-who").classList.remove("hidden");
-      renderWho();
-    } catch (err) {
-      console.error("Fetch failure:", err);
-      alert("Failed to reach Apps Script. Please try again!");
-      startBtn.disabled = false;
-      startBtn.innerText = "Let's Play! 🚀";
-    }
-  }
-
-  function renderWho() {
-    if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
-
-    document.getElementById("who-result-banner").classList.add("hidden");
-    document.getElementById("who-choices").classList.remove("hidden");
-    document.getElementById("audio-veil").classList.remove("revealed");
-
-    const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
-
-    document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
-
-    // Reliable Google Drive preview embed with cross-origin autoplay allowance
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
-  }
-
-  function submitWhoAnswer(choice) {
-    if (!driveVideos[whoIdx]) return;
-
-    const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
-    const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
-
-    // 1. Reveal video stage
-    document.getElementById("audio-veil").classList.add("revealed");
-
-    // 2. Hide choices and display bottom banner
-    document.getElementById("who-choices").classList.add("hidden");
-    document.getElementById("who-result-banner").classList.remove("hidden");
-
-    // 3. Replay from start for visual reveal
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
-
-    const iconEl = document.getElementById("who-banner-icon");
-    const titleEl = document.getElementById("who-banner-title");
-    const ptsEl = document.getElementById("who-banner-pts");
-    const detailEl = document.getElementById("who-banner-detail");
-
-    if (isCorrect) {
-      score += 100;
-      iconEl.innerText = "🎉";
-      titleEl.className = "banner-title correct";
-      titleEl.innerText = "YOU GOT IT! 🌟";
-      ptsEl.innerText = "+100 Points";
-      detailEl.innerText = `It was indeed ${item.answer}!`;
-    } else {
-      iconEl.innerText = "😅";
-      titleEl.className = "banner-title wrong";
-      titleEl.innerText = "NOT QUITE! 🎈";
-      ptsEl.innerText = "+0 Points";
-      detailEl.innerText = `That sound was actually made by ${item.answer}!`;
-    }
-  }
-
-  function advanceWho() {
-    const frame = document.getElementById("who-frame");
-    frame.src = "about:blank";
-
-    whoIdx++;
-    if (whoIdx < driveVideos.length) {
-      renderWho();
-    } else {
-      document.getElementById("screen-who").classList.add("hidden");
-      document.getElementById("screen-age").classList.remove("hidden");
-      renderAge();
-    }
-  }
-
-  function renderAge() {
-    if (!drivePhotos || drivePhotos.length === 0) {
-      setTimeout(renderAge, 300);
-      return;
-    }
-
-    document.getElementById("age-overlay").classList.add("hidden");
-
-    const item = drivePhotos[ageIdx];
-    document.getElementById("age-img").src = item.src;
-    document.getElementById("age-count").innerText = `${ageIdx + 1}/${drivePhotos.length}`;
-
-    selectedMonth = null;
-    document.getElementById("month-display-text").innerText = "Select a Month 👇";
-    document.getElementById("btn-confirm-age").disabled = true;
-    document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
-  }
-
-  function submitAgeGuess() {
-    if (!selectedMonth) return;
-
-    const guess = selectedMonth;
-    const actual = drivePhotos[ageIdx].actualMonths;
-    const diff = Math.abs(guess - actual);
-    const pts = Math.max(0, 100 - (diff * 25));
-    score += pts;
-
-    const iconEl = document.getElementById("age-icon");
-    const titleEl = document.getElementById("age-title");
-    const ptsEl = document.getElementById("age-pts");
-    const detailEl = document.getElementById("age-detail");
-    const nextBtn = document.getElementById("age-next-btn");
-
-    if (diff === 0) {
-      iconEl.innerText = "🎯";
-      titleEl.className = "overlay-title correct";
-      titleEl.innerText = "BULLSEYE! 🥳";
-      ptsEl.innerText = "+100 Points";
-      detailEl.innerText = `Exact match! Milad was ${actual} months old!`;
-    } else if (diff === 1) {
-      iconEl.innerText = "👏";
-      titleEl.className = "overlay-title correct";
-      titleEl.innerText = "SO CLOSE! ✨";
-      ptsEl.innerText = `+${pts} Points`;
-      detailEl.innerText = `Milad was actually ${actual} months old!`;
-    } else {
-      iconEl.innerText = "📸";
-      titleEl.className = "overlay-title wrong";
-      titleEl.innerText = "NICE TRY! 🍼";
-      ptsEl.innerText = `+${pts} Points`;
-      detailEl.innerText = `Milad was actually ${actual} months old in this picture!`;
-    }
-
-    if (ageIdx + 1 >= drivePhotos.length) {
-      nextBtn.innerText = "See Final Results 🏆";
-    } else {
-      nextBtn.innerText = "Next Photo ➔";
-    }
-
-    document.getElementById("age-overlay").classList.remove("hidden");
-  }
-
-  function advanceAge() {
-    ageIdx++;
-    if (ageIdx < drivePhotos.length) {
-      renderAge();
-    } else {
-      document.getElementById("screen-age").classList.add("hidden");
-      document.getElementById("screen-finish").classList.remove("hidden");
-      document.getElementById("final-score").innerText = score;
-    }
-  }
-
-  async function saveScore() {
-    const btn = document.getElementById("btn-save");
-    btn.disabled = true;
-    btn.innerText = "Saving Score... ⏳";
-
-    const localScores = saveLocalLeaderboard(playerName, score);
-
-    try {
-      const url = `${API_URL}?action=submitScore&name=${encodeURIComponent(playerName)}&score=${score}`;
-      const cloudScores = await fetchWithRetry(url);
-
-      if (Array.isArray(cloudScores) && cloudScores.length > 0) {
-        renderLeaderboard(cloudScores);
-        return;
-      }
-    } catch (err) {
-      console.warn("Could not sync to Apps Script directly, showing local cache:", err);
-    }
-
-    renderLeaderboard(localScores);
-  }
-
-  function renderLeaderboard(scores) {
-    document.getElementById("screen-finish").classList.add("hidden");
-    document.getElementById("screen-leaderboard").classList.remove("hidden");
-
-    const list = document.getElementById("leaderboard-items");
-    if (!scores || scores.length === 0) {
-      list.innerHTML = `<li style="text-align:center; padding:16px; color:var(--muted); font-size:1rem; font-weight:700;">No scores yet. Be the first party champion! 🎈</li>`;
-      return;
-    }
-
-    list.innerHTML = scores.slice(0, 10).map((entry, idx) => `
-      <li class="leaderboard-item">
-        <span class="rank">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '#' + (idx + 1)}</span>
-        <span class="player">${escapeText(entry.name)}</span>
-        <span class="pts">${entry.score} pts</span>
-      </li>
-    `).join("");
-  }
-
-  function escapeText(str) {
-    const div = document.createElement("div");
-    div.innerText = str;
-    return div.innerHTML;
-  }
-</script>
-</body>
-</html>
+      
