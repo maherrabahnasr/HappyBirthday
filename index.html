@@ -616,10 +616,8 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <!-- Native HTML5 video tag with WebKit mobile inline permissions -->
       <video id="who-video" playsinline webkit-playsinline x5-playsinline preload="auto"></video>
 
-      <!-- Interactive veil for guaranteed audio initiation on iOS -->
       <div id="audio-veil" class="audio-veil" onclick="playAudioByUser()">
         <div class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
@@ -769,6 +767,20 @@
     return scores;
   }
 
+  // Resilient fetch wrapper that automatically retries if cold starts drop the connection
+  async function fetchWithRetry(url, retries = 2) {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const res = await fetch(url, { method: "GET", redirect: "follow" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        if (i === retries) throw err;
+        await new Promise(r => setTimeout(r, 600));
+      }
+    }
+  }
+
   async function initApp() {
     const input = document.getElementById("player-name");
     if (!input.value.trim()) {
@@ -777,7 +789,7 @@
     }
     playerName = input.value.trim();
 
-    // Prime WebKit audio context on the initial physical user touch
+    // Prime audio context on the initial physical click gesture
     const video = document.getElementById("who-video");
     video.muted = false;
     video.volume = 1.0;
@@ -792,43 +804,17 @@
     startBtn.disabled = true;
     startBtn.innerText = "Getting Party Ready... 🎈";
 
-    const fetchOptions = {
-      method: "GET",
-      redirect: "follow",
-      headers: { "Accept": "application/json" }
-    };
-
     try {
-      const [vidsRes, photosRes] = await Promise.all([
-        fetch(`${API_URL}?action=getVideos`, fetchOptions).then(async r => {
-          if (!r.ok) throw new Error(`Video API HTTP ${r.status}`);
-          return r.json();
-        }),
-        fetch(`${API_URL}?action=getPhotos`, fetchOptions).then(async r => {
-          if (!r.ok) throw new Error(`Photos API HTTP ${r.status}`);
-          return r.json();
-        })
-      ]);
+      // Calls the combined initGame endpoint to eliminate container collision & cold starts
+      const data = await fetchWithRetry(`${API_URL}?action=initGame`);
 
-      driveVideos = shuffleArray(Array.isArray(vidsRes) ? vidsRes : []);
+      driveVideos = shuffleArray(data.videos || []);
+      drivePhotos = shuffleArray(data.photos || []);
 
-      if (photosRes && photosRes.photos) {
-        drivePhotos = shuffleArray(photosRes.photos);
-        if (photosRes.avatars) {
-          if (photosRes.avatars.milad) document.getElementById("avatar-milad").src = photosRes.avatars.milad;
-          if (photosRes.avatars.maher) document.getElementById("avatar-maher").src = photosRes.avatars.maher;
-          if (photosRes.avatars.maisune) document.getElementById("avatar-maisune").src = photosRes.avatars.maisune;
-        }
-      } else if (Array.isArray(photosRes)) {
-        const filtered = photosRes.filter(p => {
-          const name = (p.name || "").toLowerCase();
-          const isAvatar = name.includes("maher") || name.includes("maisune") || (name.includes("milad") && !/\d+/.test(name));
-          if (name.includes("maher")) document.getElementById("avatar-maher").src = p.src;
-          if (name.includes("maisune")) document.getElementById("avatar-maisune").src = p.src;
-          if (name.includes("milad") && !/\d+/.test(name)) document.getElementById("avatar-milad").src = p.src;
-          return !isAvatar;
-        });
-        drivePhotos = shuffleArray(filtered);
+      if (data.avatars) {
+        if (data.avatars.milad) document.getElementById("avatar-milad").src = data.avatars.milad;
+        if (data.avatars.maher) document.getElementById("avatar-maher").src = data.avatars.maher;
+        if (data.avatars.maisune) document.getElementById("avatar-maisune").src = data.avatars.maisune;
       }
 
       if (driveVideos.length === 0) {
@@ -843,7 +829,7 @@
       renderWho();
     } catch (err) {
       console.error("Fetch failure:", err);
-      alert("Failed to reach Apps Script. Check deployment settings.");
+      alert("Failed to reach Apps Script. Please try again!");
       startBtn.disabled = false;
       startBtn.innerText = "Let's Play! 🚀";
     }
@@ -862,7 +848,7 @@
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
 
-    // Direct streaming URL compatible with WebKit without third-party cookie blocking
+    // Direct streaming URL compatible with WebKit without third-party cookie restrictions
     video.src = `https://drive.usercontent.google.com/download?id=${item.id}&export=view&authuser=0`;
     video.currentTime = 0;
     video.muted = false;
@@ -871,7 +857,6 @@
 
     playBtn.innerText = "▶ Tap to Play Sound";
 
-    // Attempt autoplay; if Safari suppresses unprompted autoplay, the button remains ready for the tap
     const p = video.play();
     if (p !== undefined) {
       p.then(() => {
@@ -882,7 +867,6 @@
     }
   }
 
-  // Physical touch handler directly bound to user interaction
   function playAudioByUser() {
     const video = document.getElementById("who-video");
     const playBtn = document.getElementById("btn-sound-action");
@@ -896,7 +880,6 @@
       p.then(() => {
         playBtn.innerText = "🔄 Replay Sound";
       }).catch(err => {
-        // If the download link times out, reload and play
         video.load();
         video.play().then(() => {
           playBtn.innerText = "🔄 Replay Sound";
@@ -1042,8 +1025,7 @@
 
     try {
       const url = `${API_URL}?action=submitScore&name=${encodeURIComponent(playerName)}&score=${score}`;
-      const res = await fetch(url, { method: "GET", redirect: "follow" });
-      const cloudScores = await res.json();
+      const cloudScores = await fetchWithRetry(url);
 
       if (Array.isArray(cloudScores) && cloudScores.length > 0) {
         renderLeaderboard(cloudScores);
