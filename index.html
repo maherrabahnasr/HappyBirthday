@@ -212,8 +212,8 @@
     .media-stage {
       position: relative;
       width: 100%;
-      height: 420px;
-      max-height: 56vh;
+      height: 400px;
+      max-height: 54vh;
       background: #000000;
       border-radius: 20px;
       overflow: hidden;
@@ -222,14 +222,15 @@
       box-shadow: 0 8px 18px rgba(0,0,0,0.1);
     }
 
-    .media-stage video {
+    .media-stage iframe {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      border: none;
       background: #000;
       display: block;
     }
 
+    /* Sound-Only Listening Veil with Click Pass-Through */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -238,28 +239,27 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 12px;
       color: white;
       z-index: 10;
-      transition: opacity 0.3s ease;
-      cursor: pointer;
+      /* Pass touches straight through to Google's play button underneath */
+      pointer-events: none;
       user-select: none;
     }
 
     .audio-veil.revealed {
-      opacity: 0;
-      pointer-events: none;
+      display: none !important;
     }
 
     .sound-pulse {
-      width: 86px;
-      height: 86px;
+      width: 84px;
+      height: 84px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.25);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.8rem;
+      font-size: 2.6rem;
       animation: bubblyPulse 1.5s infinite ease-in-out;
       box-shadow: 0 0 0 0 rgba(254, 240, 138, 0.6);
     }
@@ -270,25 +270,17 @@
       100% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(254, 240, 138, 0); }
     }
 
-    .btn-replay-sound {
+    .tap-cue {
       background: #ffca3a;
       color: #1e293b;
-      border: none;
-      border-radius: 25px;
-      padding: 12px 26px;
-      font-size: 1.05rem;
+      border-radius: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
       font-weight: 800;
-      cursor: pointer;
-      display: inline-flex;
+      box-shadow: 0 4px 0 #d4a017;
+      display: flex;
       align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 0 #d4a017, 0 6px 14px rgba(0,0,0,0.2);
-      transition: all 0.15s ease;
-    }
-
-    .btn-replay-sound:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #d4a017;
+      gap: 6px;
     }
 
     .choice-grid-3 {
@@ -579,6 +571,14 @@
       border-radius: 10px;
       font-size: 0.9rem;
     }
+
+    .ios-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 700;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -606,6 +606,7 @@
     </p>
     <input type="text" id="player-name" placeholder="Type your name here..." maxlength="20" />
     <button class="btn btn-primary" id="btn-start" onclick="initApp()">Let's Play! 🚀</button>
+    <div class="ios-note">💡 iPhone users: make sure your silent switch / mute toggle is off!</div>
   </div>
 
   <!-- SCREEN 2: WHO SAID IT -->
@@ -616,15 +617,15 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <video id="who-video" playsinline webkit-playsinline x5-playsinline preload="auto"></video>
+      <!-- Universal, Cross-Platform Drive Player with Wildcard Autoplay Delegation -->
+      <iframe id="who-frame" allow="autoplay *; encrypted-media *; fullscreen *"></iframe>
 
-      <div id="audio-veil" class="audio-veil" onclick="playAudioByUser()">
+      <!-- Sound-Only Listening Veil -->
+      <div id="audio-veil" class="audio-veil">
         <div class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
-        <button type="button" class="btn-replay-sound" id="btn-sound-action" onclick="event.stopPropagation(); playAudioByUser();">
-          ▶ Tap to Play Sound
-        </button>
-        <div style="color: #bfdbfe; font-size: 0.88rem; font-weight: 700; margin-top: 4px;">Guess who made that noise below! 👇</div>
+        <div class="tap-cue">▶ Tap Center to Play / Replay</div>
+        <div style="color: #bfdbfe; font-size: 0.85rem; font-weight: 700;">Guess who made that noise below! 👇</div>
       </div>
     </div>
 
@@ -767,7 +768,7 @@
     return scores;
   }
 
-  // Resilient fetch wrapper that automatically retries if cold starts drop the connection
+  // Auto-retry fetch helper preventing Google Apps Script cold-start drops
   async function fetchWithRetry(url, retries = 2) {
     for (let i = 0; i <= retries; i++) {
       try {
@@ -789,15 +790,6 @@
     }
     playerName = input.value.trim();
 
-    // Prime audio context on the initial physical click gesture
-    const video = document.getElementById("who-video");
-    video.muted = false;
-    video.volume = 1.0;
-    const prime = video.play();
-    if (prime !== undefined) {
-      prime.then(() => video.pause()).catch(() => {});
-    }
-
     initMonthGrid();
 
     const startBtn = document.getElementById("btn-start");
@@ -805,7 +797,6 @@
     startBtn.innerText = "Getting Party Ready... 🎈";
 
     try {
-      // Calls the combined initGame endpoint to eliminate container collision & cold starts
       const data = await fetchWithRetry(`${API_URL}?action=initGame`);
 
       driveVideos = shuffleArray(data.videos || []);
@@ -843,56 +834,19 @@
     document.getElementById("audio-veil").classList.remove("revealed");
 
     const item = driveVideos[whoIdx];
-    const video = document.getElementById("who-video");
-    const playBtn = document.getElementById("btn-sound-action");
+    const frame = document.getElementById("who-frame");
 
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
 
-    // Direct streaming URL compatible with WebKit without third-party cookie restrictions
-    video.src = `https://drive.usercontent.google.com/download?id=${item.id}&export=view&authuser=0`;
-    video.currentTime = 0;
-    video.muted = false;
-    video.volume = 1.0;
-    video.load();
-
-    playBtn.innerText = "▶ Tap to Play Sound";
-
-    const p = video.play();
-    if (p !== undefined) {
-      p.then(() => {
-        playBtn.innerText = "🔄 Replay Sound";
-      }).catch(() => {
-        playBtn.innerText = "▶ Tap to Play Sound";
-      });
-    }
-  }
-
-  function playAudioByUser() {
-    const video = document.getElementById("who-video");
-    const playBtn = document.getElementById("btn-sound-action");
-
-    video.muted = false;
-    video.volume = 1.0;
-    video.currentTime = 0;
-
-    const p = video.play();
-    if (p !== undefined) {
-      p.then(() => {
-        playBtn.innerText = "🔄 Replay Sound";
-      }).catch(err => {
-        video.load();
-        video.play().then(() => {
-          playBtn.innerText = "🔄 Replay Sound";
-        }).catch(e => console.error("Playback error:", e));
-      });
-    }
+    // Reliable Google Drive preview embed with cross-origin autoplay allowance
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1`;
   }
 
   function submitWhoAnswer(choice) {
     if (!driveVideos[whoIdx]) return;
 
     const item = driveVideos[whoIdx];
-    const video = document.getElementById("who-video");
+    const frame = document.getElementById("who-frame");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
     // 1. Reveal video stage
@@ -902,10 +856,8 @@
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
-    // 3. Replay clean video from beginning with full audio
-    video.muted = false;
-    video.currentTime = 0;
-    video.play().catch(() => {});
+    // 3. Replay from start for visual reveal
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
 
     const iconEl = document.getElementById("who-banner-icon");
     const titleEl = document.getElementById("who-banner-title");
@@ -929,9 +881,8 @@
   }
 
   function advanceWho() {
-    const video = document.getElementById("who-video");
-    video.pause();
-    video.src = "";
+    const frame = document.getElementById("who-frame");
+    frame.src = "about:blank";
 
     whoIdx++;
     if (whoIdx < driveVideos.length) {
