@@ -212,8 +212,8 @@
     .media-stage {
       position: relative;
       width: 100%;
-      height: 460px;
-      max-height: 58vh;
+      height: 440px;
+      max-height: 54vh;
       background: #000000;
       border-radius: 22px;
       overflow: hidden;
@@ -226,14 +226,12 @@
       position: absolute;
       top: 50%;
       left: 50%;
+      width: 100%;
       height: 100%;
-      aspect-ratio: 16 / 9;
-      min-width: 100%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(1.32);
       border: none;
       background: #000;
       display: block;
-      pointer-events: none;
     }
 
     .audio-veil {
@@ -700,6 +698,7 @@
     <div class="media-stage" id="media-stage-box">
       <iframe id="who-frame" allow="autoplay *; encrypted-media *; fullscreen *"></iframe>
 
+      <!-- Sound-Only Listening Veil -->
       <div id="audio-veil" class="audio-veil">
         <div id="sound-pulse-icon" class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
@@ -899,7 +898,6 @@
       let rawPhotos = [];
       let avatars = {};
 
-      // 1. Attempt single combined payload first
       try {
         const data = await fetchWithRetry(`${API_URL}?action=initGame`);
         if (data && typeof data === "object") {
@@ -908,10 +906,9 @@
           if (data.avatars && typeof data.avatars === "object") avatars = data.avatars;
         }
       } catch (e) {
-        console.warn("initGame endpoint unavailable, falling back to separate calls:", e);
+        console.warn("initGame unavailable, falling back to separate calls:", e);
       }
 
-      // 2. Fallback to separate legacy endpoints if initGame didn't provide videos
       if (rawVideos.length === 0) {
         const [vidsRes, photosRes] = await Promise.all([
           fetchWithRetry(`${API_URL}?action=getVideos`),
@@ -968,10 +965,11 @@
     document.getElementById("who-choices").classList.remove("hidden");
     document.getElementById("audio-veil").classList.remove("revealed");
 
+    const item = driveVideos[whoIdx];
     const frame = document.getElementById("who-frame");
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
 
-    frame.src = "about:blank";
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview`;
   }
 
   function resetAudioState() {
@@ -992,10 +990,7 @@
     const progressFill = document.getElementById("progress-fill");
     const timerText = document.getElementById("timer-text");
 
-    frame.src = "about:blank";
-    setTimeout(() => {
-      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
-    }, 50);
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&cb=${Date.now()}`;
 
     playBtn.innerText = "🔄 Replay Sound";
     pulseIcon.classList.add("playing");
@@ -1034,10 +1029,7 @@
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
-    frame.src = "about:blank";
-    setTimeout(() => {
-      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
-    }, 50);
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&cb=${Date.now()}`;
 
     const iconEl = document.getElementById("who-banner-icon");
     const titleEl = document.getElementById("who-banner-title");
@@ -1064,10 +1056,7 @@
     if (!driveVideos[whoIdx]) return;
     const item = driveVideos[whoIdx];
     const frame = document.getElementById("who-frame");
-    frame.src = "about:blank";
-    setTimeout(() => {
-      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
-    }, 50);
+    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&cb=${Date.now()}`;
   }
 
   function advanceWho() {
