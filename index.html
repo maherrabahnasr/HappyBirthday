@@ -209,7 +209,6 @@
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
     }
 
-    /* Video Frame Stage: Full-bleed vertical framing */
     .media-stage {
       position: relative;
       width: 100%;
@@ -223,7 +222,6 @@
       box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
 
-    /* Zooms the 16:9 player to fill height, pushes Google bars off-screen, and blocks HUD clicks */
     .media-stage iframe {
       position: absolute;
       top: 50%;
@@ -238,7 +236,6 @@
       pointer-events: none;
     }
 
-    /* Listening Veil with Progress Bar */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -701,10 +698,8 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <!-- Full-bleed centered embed -->
       <iframe id="who-frame" allow="autoplay *; encrypted-media *; fullscreen *"></iframe>
 
-      <!-- Sound-Only Listening Veil with Progress Controls -->
       <div id="audio-veil" class="audio-veil">
         <div id="sound-pulse-icon" class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
@@ -749,7 +744,6 @@
       </div>
       <div id="who-banner-detail" class="banner-detail"></div>
       
-      <!-- Action buttons: Replay cleanly or proceed -->
       <div class="banner-btn-row">
         <button class="btn-watch-again" onclick="replayRevealVideo()">🔄 Watch Again</button>
         <button class="btn btn-primary" style="flex: 1.3;" onclick="advanceWho()">Next Question ➔</button>
@@ -762,4 +756,454 @@
     <div class="status-bar">
       <span>Part 2: Guess Milad's Age! 📸</span>
       <span class="status-pill" id="age-count">1/5</span>
-      
+    </div>
+
+    <div class="photo-frame">
+      <img id="age-img" src="" alt="Baby photo" />
+    </div>
+
+    <div class="month-picker-container">
+      <div class="selected-month-val" id="month-display-text">Select a Month 👇</div>
+      <div class="month-grid" id="month-grid"></div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-confirm-age" disabled onclick="submitAgeGuess()">Confirm Guess 🎯</button>
+
+    <div id="age-overlay" class="result-overlay hidden">
+      <div id="age-icon" class="overlay-icon"></div>
+      <div id="age-title" class="overlay-title"></div>
+      <div id="age-pts" class="overlay-points"></div>
+      <div id="age-detail" class="overlay-detail"></div>
+      <button class="btn btn-primary" id="age-next-btn" onclick="advanceAge()">Next Question ➔</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: FINISH -->
+  <div id="screen-finish" class="card hidden" style="text-align: center;">
+    <div style="font-size: 3.5rem; margin-bottom: 4px;">🎉🎈🥳</div>
+    <h2 style="font-size: 1.6rem; color: #1d4ed8;">Hip Hip Hooray!</h2>
+    <p style="color: var(--muted); margin-top: 4px; font-weight: 700; font-size: 0.95rem;">You completed all the games!</p>
+    <div style="font-size: 3.2rem; font-weight: 800; color: #2563eb; margin: 12px 0; text-shadow: 2px 2px 0 #dbeafe;">
+      <span id="final-score">0</span> <span style="font-size: 1.2rem; color: #64748b;">pts</span>
+    </div>
+    <button id="btn-save" class="btn btn-primary" onclick="saveScore()">Submit to Leaderboard 🏆</button>
+  </div>
+
+  <!-- SCREEN 5: LEADERBOARD -->
+  <div id="screen-leaderboard" class="card hidden">
+    <h3 style="text-align: center; margin-bottom: 8px; font-size: 1.4rem; color: #1d4ed8;">🏆 Birthday Party Leaders 🎈</h3>
+    <ul id="leaderboard-items" class="leaderboard-list"></ul>
+    <button class="btn btn-outline" onclick="location.reload()">Play Again 🔄</button>
+  </div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
+
+  let playerName = "";
+  let score = 0;
+  let whoIdx = 0;
+  let ageIdx = 0;
+  let selectedMonth = null;
+
+  let driveVideos = [];
+  let drivePhotos = [];
+
+  let progressTimer = null;
+  const ESTIMATED_CLIP_DURATION = 6;
+
+  function shuffleArray(arr) {
+    if (!Array.isArray(arr)) return [];
+    const array = [...arr];
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function initMonthGrid() {
+    const grid = document.getElementById("month-grid");
+    grid.innerHTML = "";
+    for (let i = 1; i <= 12; i++) {
+      const btn = document.createElement("button");
+      btn.className = "month-btn";
+      btn.id = `month-btn-${i}`;
+      btn.innerHTML = `${i}<span class="sub">mo</span>`;
+      btn.onclick = () => selectMonth(i);
+      grid.appendChild(btn);
+    }
+  }
+
+  function selectMonth(m) {
+    selectedMonth = m;
+    document.getElementById("month-display-text").innerText = `${selectedMonth} Month${selectedMonth > 1 ? "s" : ""} Old! ✨`;
+    document.getElementById("btn-confirm-age").disabled = false;
+
+    document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
+    const activeBtn = document.getElementById(`month-btn-${selectedMonth}`);
+    if (activeBtn) activeBtn.classList.add("active");
+  }
+
+  function getLocalLeaderboard() {
+    const raw = localStorage.getItem("party_leaderboard_json");
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveLocalLeaderboard(name, finalScore) {
+    const scores = getLocalLeaderboard();
+    scores.push({
+      name: name,
+      score: finalScore,
+      timestamp: new Date().toISOString()
+    });
+    scores.sort((a, b) => b.score - a.score);
+    localStorage.setItem("party_leaderboard_json", JSON.stringify(scores));
+    return scores;
+  }
+
+  async function fetchWithRetry(url, retries = 2) {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const res = await fetch(url, { method: "GET", redirect: "follow" });
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        if (i === retries) throw err;
+        await new Promise(r => setTimeout(r, 600));
+      }
+    }
+  }
+
+  async function initApp() {
+    const input = document.getElementById("player-name");
+    if (!input || !input.value.trim()) {
+      alert("Please enter your name!");
+      return;
+    }
+    playerName = input.value.trim();
+
+    initMonthGrid();
+
+    const startBtn = document.getElementById("btn-start");
+    startBtn.disabled = true;
+    startBtn.innerText = "Getting Party Ready... 🎈";
+
+    try {
+      let rawVideos = [];
+      let rawPhotos = [];
+      let avatars = {};
+
+      // 1. Attempt single combined payload first
+      try {
+        const data = await fetchWithRetry(`${API_URL}?action=initGame`);
+        if (data && typeof data === "object") {
+          if (Array.isArray(data.videos)) rawVideos = data.videos;
+          if (Array.isArray(data.photos)) rawPhotos = data.photos;
+          if (data.avatars && typeof data.avatars === "object") avatars = data.avatars;
+        }
+      } catch (e) {
+        console.warn("initGame endpoint unavailable, falling back to separate calls:", e);
+      }
+
+      // 2. Fallback to separate legacy endpoints if initGame didn't provide videos
+      if (rawVideos.length === 0) {
+        const [vidsRes, photosRes] = await Promise.all([
+          fetchWithRetry(`${API_URL}?action=getVideos`),
+          fetchWithRetry(`${API_URL}?action=getPhotos`)
+        ]);
+
+        if (Array.isArray(vidsRes)) rawVideos = vidsRes;
+
+        if (photosRes && photosRes.photos) {
+          rawPhotos = photosRes.photos;
+          if (photosRes.avatars) avatars = photosRes.avatars;
+        } else if (Array.isArray(photosRes)) {
+          rawPhotos = photosRes.filter(p => {
+            const name = (p.name || "").toLowerCase();
+            const isAvatar = name.includes("maher") || name.includes("maisune") || (name.includes("milad") && !/\d+/.test(name));
+            if (name.includes("maher")) avatars.maher = p.src;
+            if (name.includes("maisune")) avatars.maisune = p.src;
+            if (name.includes("milad") && !/\d+/.test(name)) avatars.milad = p.src;
+            return !isAvatar;
+          });
+        }
+      }
+
+      driveVideos = shuffleArray(rawVideos);
+      drivePhotos = shuffleArray(rawPhotos);
+
+      if (avatars.milad && document.getElementById("avatar-milad")) document.getElementById("avatar-milad").src = avatars.milad;
+      if (avatars.maher && document.getElementById("avatar-maher")) document.getElementById("avatar-maher").src = avatars.maher;
+      if (avatars.maisune && document.getElementById("avatar-maisune")) document.getElementById("avatar-maisune").src = avatars.maisune;
+
+      if (driveVideos.length === 0) {
+        alert("0 videos found in Drive folder. Check folder permissions.");
+        startBtn.disabled = false;
+        startBtn.innerText = "Let's Play! 🚀";
+        return;
+      }
+
+      document.getElementById("screen-login").classList.add("hidden");
+      document.getElementById("screen-who").classList.remove("hidden");
+      renderWho();
+    } catch (err) {
+      console.error("Initialization failure:", err);
+      alert("Failed to reach Apps Script. Please check your internet connection and try again.");
+      startBtn.disabled = false;
+      startBtn.innerText = "Let's Play! 🚀";
+    }
+  }
+
+  function renderWho() {
+    if (!driveVideos || driveVideos.length === 0 || whoIdx >= driveVideos.length) return;
+
+    resetAudioState();
+    document.getElementById("who-result-banner").classList.add("hidden");
+    document.getElementById("who-choices").classList.remove("hidden");
+    document.getElementById("audio-veil").classList.remove("revealed");
+
+    const frame = document.getElementById("who-frame");
+    document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
+
+    frame.src = "about:blank";
+  }
+
+  function resetAudioState() {
+    if (progressTimer) clearInterval(progressTimer);
+    document.getElementById("progress-container").classList.add("hidden");
+    document.getElementById("progress-fill").style.width = "0%";
+    document.getElementById("sound-pulse-icon").classList.remove("playing");
+    document.getElementById("btn-sound-action").innerText = "▶ Play Sound";
+  }
+
+  function toggleAudioPlayback() {
+    if (!driveVideos[whoIdx]) return;
+    const item = driveVideos[whoIdx];
+    const frame = document.getElementById("who-frame");
+    const playBtn = document.getElementById("btn-sound-action");
+    const pulseIcon = document.getElementById("sound-pulse-icon");
+    const progressWrap = document.getElementById("progress-container");
+    const progressFill = document.getElementById("progress-fill");
+    const timerText = document.getElementById("timer-text");
+
+    frame.src = "about:blank";
+    setTimeout(() => {
+      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+    }, 50);
+
+    playBtn.innerText = "🔄 Replay Sound";
+    pulseIcon.classList.add("playing");
+    progressWrap.classList.remove("hidden");
+
+    if (progressTimer) clearInterval(progressTimer);
+
+    const startTime = Date.now();
+    const durationMs = ESTIMATED_CLIP_DURATION * 1000;
+
+    progressTimer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(100, (elapsed / durationMs) * 100);
+      const remainingSeconds = Math.max(0, Math.ceil((durationMs - elapsed) / 1000));
+
+      progressFill.style.width = `${progress}%`;
+      timerText.innerText = remainingSeconds > 0 ? `Playing: ~${remainingSeconds}s left` : `Finished listening! Guess below 👇`;
+
+      if (progress >= 100) {
+        clearInterval(progressTimer);
+        pulseIcon.classList.remove("playing");
+      }
+    }, 100);
+  }
+
+  function submitWhoAnswer(choice) {
+    if (!driveVideos[whoIdx]) return;
+
+    if (progressTimer) clearInterval(progressTimer);
+
+    const item = driveVideos[whoIdx];
+    const frame = document.getElementById("who-frame");
+    const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
+
+    document.getElementById("audio-veil").classList.add("revealed");
+    document.getElementById("who-choices").classList.add("hidden");
+    document.getElementById("who-result-banner").classList.remove("hidden");
+
+    frame.src = "about:blank";
+    setTimeout(() => {
+      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+    }, 50);
+
+    const iconEl = document.getElementById("who-banner-icon");
+    const titleEl = document.getElementById("who-banner-title");
+    const ptsEl = document.getElementById("who-banner-pts");
+    const detailEl = document.getElementById("who-banner-detail");
+
+    if (isCorrect) {
+      score += 100;
+      iconEl.innerText = "🎉";
+      titleEl.className = "banner-title correct";
+      titleEl.innerText = "YOU GOT IT! 🌟";
+      ptsEl.innerText = "+100 Points";
+      detailEl.innerText = `It was indeed ${item.answer}!`;
+    } else {
+      iconEl.innerText = "😅";
+      titleEl.className = "banner-title wrong";
+      titleEl.innerText = "NOT QUITE! 🎈";
+      ptsEl.innerText = "+0 Points";
+      detailEl.innerText = `That sound was actually made by ${item.answer}!`;
+    }
+  }
+
+  function replayRevealVideo() {
+    if (!driveVideos[whoIdx]) return;
+    const item = driveVideos[whoIdx];
+    const frame = document.getElementById("who-frame");
+    frame.src = "about:blank";
+    setTimeout(() => {
+      frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&t=${Date.now()}`;
+    }, 50);
+  }
+
+  function advanceWho() {
+    if (progressTimer) clearInterval(progressTimer);
+    const frame = document.getElementById("who-frame");
+    frame.src = "about:blank";
+
+    whoIdx++;
+    if (whoIdx < driveVideos.length) {
+      renderWho();
+    } else {
+      document.getElementById("screen-who").classList.add("hidden");
+      document.getElementById("screen-age").classList.remove("hidden");
+      renderAge();
+    }
+  }
+
+  function renderAge() {
+    if (!drivePhotos || drivePhotos.length === 0) {
+      setTimeout(renderAge, 300);
+      return;
+    }
+
+    document.getElementById("age-overlay").classList.add("hidden");
+
+    const item = drivePhotos[ageIdx];
+    document.getElementById("age-img").src = item.src;
+    document.getElementById("age-count").innerText = `${ageIdx + 1}/${drivePhotos.length}`;
+
+    selectedMonth = null;
+    document.getElementById("month-display-text").innerText = "Select a Month 👇";
+    document.getElementById("btn-confirm-age").disabled = true;
+    document.querySelectorAll(".month-btn").forEach(btn => btn.classList.remove("active"));
+  }
+
+  function submitAgeGuess() {
+    if (!selectedMonth) return;
+
+    const guess = selectedMonth;
+    const actual = drivePhotos[ageIdx].actualMonths;
+    const diff = Math.abs(guess - actual);
+    const pts = Math.max(0, 100 - (diff * 25));
+    score += pts;
+
+    const iconEl = document.getElementById("age-icon");
+    const titleEl = document.getElementById("age-title");
+    const ptsEl = document.getElementById("age-pts");
+    const detailEl = document.getElementById("age-detail");
+    const nextBtn = document.getElementById("age-next-btn");
+
+    if (diff === 0) {
+      iconEl.innerText = "🎯";
+      titleEl.className = "overlay-title correct";
+      titleEl.innerText = "BULLSEYE! 🥳";
+      ptsEl.innerText = "+100 Points";
+      detailEl.innerText = `Exact match! Milad was ${actual} months old!`;
+    } else if (diff === 1) {
+      iconEl.innerText = "👏";
+      titleEl.className = "overlay-title correct";
+      titleEl.innerText = "SO CLOSE! ✨";
+      ptsEl.innerText = `+${pts} Points`;
+      detailEl.innerText = `Milad was actually ${actual} months old!`;
+    } else {
+      iconEl.innerText = "📸";
+      titleEl.className = "overlay-title wrong";
+      titleEl.innerText = "NICE TRY! 🍼";
+      ptsEl.innerText = `+${pts} Points`;
+      detailEl.innerText = `Milad was actually ${actual} months old in this picture!`;
+    }
+
+    if (ageIdx + 1 >= drivePhotos.length) {
+      nextBtn.innerText = "See Final Results 🏆";
+    } else {
+      nextBtn.innerText = "Next Photo ➔";
+    }
+
+    document.getElementById("age-overlay").classList.remove("hidden");
+  }
+
+  function advanceAge() {
+    ageIdx++;
+    if (ageIdx < drivePhotos.length) {
+      renderAge();
+    } else {
+      document.getElementById("screen-age").classList.add("hidden");
+      document.getElementById("screen-finish").classList.remove("hidden");
+      document.getElementById("final-score").innerText = score;
+    }
+  }
+
+  async function saveScore() {
+    const btn = document.getElementById("btn-save");
+    btn.disabled = true;
+    btn.innerText = "Saving Score... ⏳";
+
+    const localScores = saveLocalLeaderboard(playerName, score);
+
+    try {
+      const url = `${API_URL}?action=submitScore&name=${encodeURIComponent(playerName)}&score=${score}`;
+      const cloudScores = await fetchWithRetry(url);
+
+      if (Array.isArray(cloudScores) && cloudScores.length > 0) {
+        renderLeaderboard(cloudScores);
+        return;
+      }
+    } catch (err) {
+      console.warn("Could not sync to Apps Script directly, showing local cache:", err);
+    }
+
+    renderLeaderboard(localScores);
+  }
+
+  function renderLeaderboard(scores) {
+    document.getElementById("screen-finish").classList.add("hidden");
+    document.getElementById("screen-leaderboard").classList.remove("hidden");
+
+    const list = document.getElementById("leaderboard-items");
+    if (!scores || scores.length === 0) {
+      list.innerHTML = `<li style="text-align:center; padding:16px; color:var(--muted); font-size:1rem; font-weight:700;">No scores yet. Be the first party champion! 🎈</li>`;
+      return;
+    }
+
+    list.innerHTML = scores.slice(0, 10).map((entry, idx) => `
+      <li class="leaderboard-item">
+        <span class="rank">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '#' + (idx + 1)}</span>
+        <span class="player">${escapeText(entry.name)}</span>
+        <span class="pts">${entry.score} pts</span>
+      </li>
+    `).join("");
+  }
+
+  function escapeText(str) {
+    const div = document.createElement("div");
+    div.innerText = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
