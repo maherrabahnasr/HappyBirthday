@@ -854,7 +854,6 @@
     if (activeBtn) activeBtn.classList.add("active");
   }
 
-  // --- CROSS-DEVICE LIVE SYNC LOGIC ---
   async function fetchLiveLeaderboard() {
     try {
       const controller = new AbortController();
@@ -868,7 +867,7 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (e) {
-      console.warn("Could not reach backend for scores:", e);
+      console.warn("Could not fetch leaderboard:", e);
       return [];
     }
   }
@@ -886,7 +885,7 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (e) {
-      console.warn("Failed to push score to shared sheet:", e);
+      console.warn("Failed to push score:", e);
       return [];
     }
   }
@@ -908,12 +907,10 @@
 
       initMonthGrid();
 
-      // 1. Assign local repository videos
       if (LOCAL_GITHUB_VIDEOS && LOCAL_GITHUB_VIDEOS.length > 0) {
         driveVideos = shuffleArray(LOCAL_GITHUB_VIDEOS);
       }
 
-      // 2. Fetch photos and avatars from Apps Script with timeout
       let rawPhotos = [];
       let avatars = {};
 
@@ -1041,7 +1038,7 @@
       pulseIcon.classList.add("playing");
       progressWrap.classList.remove("hidden");
     }).catch(err => {
-      console.warn("Video playback blocked by browser:", err);
+      console.warn("Playback blocked:", err);
     });
   }
 
@@ -1185,15 +1182,12 @@
       btn.innerText = "Syncing Score to Party... ⏳";
     }
 
-    // 1. Submit score to Apps Script database
     let cloudScores = await syncScoreToCloud(playerName, score);
 
-    // 2. If response didn't contain full list, fetch leaderboard directly
     if (!Array.isArray(cloudScores) || cloudScores.length === 0) {
       cloudScores = await fetchLiveLeaderboard();
     }
 
-    // 3. Render cloud-synced results
     renderLeaderboard(cloudScores);
   }
 
