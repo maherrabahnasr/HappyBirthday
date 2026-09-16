@@ -209,6 +209,7 @@
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
     }
 
+    /* Native Video Container: Zero controls, no overlays, perfectly scaled */
     .media-stage {
       position: relative;
       width: 100%;
@@ -220,20 +221,21 @@
       margin-bottom: 14px;
       border: 3px solid #bfdbfe;
       box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .media-stage iframe {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+    .media-stage video {
       width: 100%;
       height: 100%;
-      transform: translate(-50%, -50%) scale(1.32);
-      border: none;
+      object-fit: cover;
       background: #000;
       display: block;
+      pointer-events: none;
     }
 
+    /* Sound-Only Listening Veil */
     .audio-veil {
       position: absolute;
       inset: 0;
@@ -324,7 +326,7 @@
       height: 100%;
       background: linear-gradient(90deg, #38bdf8 0%, #4ade80 100%);
       border-radius: 12px;
-      transition: width 0.1s linear;
+      transition: width 0.08s linear;
     }
 
     .audio-timer-text {
@@ -696,9 +698,10 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <iframe id="who-frame" allow="autoplay *; encrypted-media *; fullscreen *"></iframe>
+      <!-- Native HTML5 video tag: zero clutter, full height, no Google UI -->
+      <video id="who-video" playsinline webkit-playsinline x5-playsinline preload="auto"></video>
 
-      <!-- Sound-Only Listening Veil -->
+      <!-- Sound-Only Listening Veil with Real-Time Progress -->
       <div id="audio-veil" class="audio-veil">
         <div id="sound-pulse-icon" class="sound-pulse">🔊</div>
         <div style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em;">Listening Mode! 🎶</div>
@@ -799,6 +802,21 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
+  // LOCAL GITHUB VIDEOS: Pointed to your repository files
+  // (Adjust the filenames below if your repo files have specific names)
+  const LOCAL_GITHUB_VIDEOS = [
+    { src: "videos/milad1.mp4", answer: "Milad" },
+    { src: "videos/milad2.mp4", answer: "Milad" },
+    { src: "videos/milad3.mp4", answer: "Milad" },
+    { src: "videos/milad4.mp4", answer: "Milad" },
+    { src: "videos/maher1.mp4", answer: "Maher" },
+    { src: "videos/maher2.mp4", answer: "Maher" },
+    { src: "videos/maher3.mp4", answer: "Maher" },
+    { src: "videos/maisune1.mp4", answer: "Maisune" },
+    { src: "videos/maisune2.mp4", answer: "Maisune" },
+    { src: "videos/maisune3.mp4", answer: "Maisune" }
+  ];
+
   let playerName = "";
   let score = 0;
   let whoIdx = 0;
@@ -807,9 +825,6 @@
 
   let driveVideos = [];
   let drivePhotos = [];
-
-  let progressTimer = null;
-  const ESTIMATED_CLIP_DURATION = 6;
 
   function shuffleArray(arr) {
     if (!Array.isArray(arr)) return [];
@@ -887,6 +902,15 @@
     }
     playerName = input.value.trim();
 
+    // Unlock WebKit audio context on user gesture
+    const video = document.getElementById("who-video");
+    video.muted = false;
+    video.volume = 1.0;
+    const p = video.play();
+    if (p !== undefined) {
+      p.then(() => video.pause()).catch(() => {});
+    }
+
     initMonthGrid();
 
     const startBtn = document.getElementById("btn-start");
@@ -894,34 +918,33 @@
     startBtn.innerText = "Getting Party Ready... 🎈";
 
     try {
-      let rawVideos = [];
+      // 1. Prioritize GitHub repository videos (guarantees clean, native video)
+      if (LOCAL_GITHUB_VIDEOS && LOCAL_GITHUB_VIDEOS.length > 0) {
+        driveVideos = shuffleArray(LOCAL_GITHUB_VIDEOS);
+      }
+
+      // 2. Fetch photos and avatars from Apps Script
       let rawPhotos = [];
       let avatars = {};
 
       try {
         const data = await fetchWithRetry(`${API_URL}?action=initGame`);
         if (data && typeof data === "object") {
-          if (Array.isArray(data.videos)) rawVideos = data.videos;
           if (Array.isArray(data.photos)) rawPhotos = data.photos;
-          if (data.avatars && typeof data.avatars === "object") avatars = data.avatars;
+          if (data.avatars) avatars = data.avatars;
+          // Fallback to backend videos only if local list is empty
+          if (driveVideos.length === 0 && Array.isArray(data.videos)) {
+            driveVideos = shuffleArray(data.videos);
+          }
         }
       } catch (e) {
-        console.warn("initGame unavailable, falling back to separate calls:", e);
-      }
-
-      if (rawVideos.length === 0) {
-        const [vidsRes, photosRes] = await Promise.all([
-          fetchWithRetry(`${API_URL}?action=getVideos`),
-          fetchWithRetry(`${API_URL}?action=getPhotos`)
-        ]);
-
-        if (Array.isArray(vidsRes)) rawVideos = vidsRes;
-
-        if (photosRes && photosRes.photos) {
-          rawPhotos = photosRes.photos;
-          if (photosRes.avatars) avatars = photosRes.avatars;
-        } else if (Array.isArray(photosRes)) {
-          rawPhotos = photosRes.filter(p => {
+        console.warn("initGame unavailable, trying getPhotos:", e);
+        const pData = await fetchWithRetry(`${API_URL}?action=getPhotos`);
+        if (pData && pData.photos) {
+          rawPhotos = pData.photos;
+          if (pData.avatars) avatars = pData.avatars;
+        } else if (Array.isArray(pData)) {
+          rawPhotos = pData.filter(p => {
             const name = (p.name || "").toLowerCase();
             const isAvatar = name.includes("maher") || name.includes("maisune") || (name.includes("milad") && !/\d+/.test(name));
             if (name.includes("maher")) avatars.maher = p.src;
@@ -932,26 +955,18 @@
         }
       }
 
-      driveVideos = shuffleArray(rawVideos);
       drivePhotos = shuffleArray(rawPhotos);
 
       if (avatars.milad && document.getElementById("avatar-milad")) document.getElementById("avatar-milad").src = avatars.milad;
       if (avatars.maher && document.getElementById("avatar-maher")) document.getElementById("avatar-maher").src = avatars.maher;
       if (avatars.maisune && document.getElementById("avatar-maisune")) document.getElementById("avatar-maisune").src = avatars.maisune;
 
-      if (driveVideos.length === 0) {
-        alert("0 videos found in Drive folder. Check folder permissions.");
-        startBtn.disabled = false;
-        startBtn.innerText = "Let's Play! 🚀";
-        return;
-      }
-
       document.getElementById("screen-login").classList.add("hidden");
       document.getElementById("screen-who").classList.remove("hidden");
       renderWho();
     } catch (err) {
       console.error("Initialization failure:", err);
-      alert("Failed to reach Apps Script. Please check your internet connection and try again.");
+      alert("Failed to reach game assets. Please check your connection and try again.");
       startBtn.disabled = false;
       startBtn.innerText = "Let's Play! 🚀";
     }
@@ -966,14 +981,34 @@
     document.getElementById("audio-veil").classList.remove("revealed");
 
     const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
+    const video = document.getElementById("who-video");
+
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
 
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview`;
+    // Load clean native MP4
+    video.src = item.src || `videos/${item.name || item.id}.mp4`;
+    video.currentTime = 0;
+    video.muted = false;
+    video.load();
+
+    // Video tracks its own progress natively
+    video.ontimeupdate = () => {
+      if (!video.duration) return;
+      const progress = (video.currentTime / video.duration) * 100;
+      const remaining = Math.max(0, Math.ceil(video.duration - video.currentTime));
+      document.getElementById("progress-fill").style.width = `${progress}%`;
+      document.getElementById("timer-text").innerText = remaining > 0 ? `Playing: ~${remaining}s left` : `Finished listening! Guess below 👇`;
+    };
+
+    video.onended = () => {
+      document.getElementById("sound-pulse-icon").classList.remove("playing");
+      document.getElementById("btn-sound-action").innerText = "🔄 Replay Sound";
+    };
   }
 
   function resetAudioState() {
-    if (progressTimer) clearInterval(progressTimer);
+    const video = document.getElementById("who-video");
+    video.pause();
     document.getElementById("progress-container").classList.add("hidden");
     document.getElementById("progress-fill").style.width = "0%";
     document.getElementById("sound-pulse-icon").classList.remove("playing");
@@ -981,55 +1016,43 @@
   }
 
   function toggleAudioPlayback() {
-    if (!driveVideos[whoIdx]) return;
-    const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
+    const video = document.getElementById("who-video");
     const playBtn = document.getElementById("btn-sound-action");
     const pulseIcon = document.getElementById("sound-pulse-icon");
     const progressWrap = document.getElementById("progress-container");
-    const progressFill = document.getElementById("progress-fill");
-    const timerText = document.getElementById("timer-text");
 
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&cb=${Date.now()}`;
+    video.currentTime = 0;
+    video.muted = false;
+    video.volume = 1.0;
 
-    playBtn.innerText = "🔄 Replay Sound";
-    pulseIcon.classList.add("playing");
-    progressWrap.classList.remove("hidden");
-
-    if (progressTimer) clearInterval(progressTimer);
-
-    const startTime = Date.now();
-    const durationMs = ESTIMATED_CLIP_DURATION * 1000;
-
-    progressTimer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(100, (elapsed / durationMs) * 100);
-      const remainingSeconds = Math.max(0, Math.ceil((durationMs - elapsed) / 1000));
-
-      progressFill.style.width = `${progress}%`;
-      timerText.innerText = remainingSeconds > 0 ? `Playing: ~${remainingSeconds}s left` : `Finished listening! Guess below 👇`;
-
-      if (progress >= 100) {
-        clearInterval(progressTimer);
-        pulseIcon.classList.remove("playing");
-      }
-    }, 100);
+    video.play().then(() => {
+      playBtn.innerText = "🔄 Replay Sound";
+      pulseIcon.classList.add("playing");
+      progressWrap.classList.remove("hidden");
+    }).catch(err => {
+      console.warn("Video playback blocked by browser:", err);
+    });
   }
 
   function submitWhoAnswer(choice) {
     if (!driveVideos[whoIdx]) return;
 
-    if (progressTimer) clearInterval(progressTimer);
-
     const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
+    const video = document.getElementById("who-video");
     const isCorrect = choice.toLowerCase() === item.answer.toLowerCase();
 
+    // 1. Reveal video stage
     document.getElementById("audio-veil").classList.add("revealed");
+
+    // 2. Hide choices and show result banner
     document.getElementById("who-choices").classList.add("hidden");
     document.getElementById("who-result-banner").classList.remove("hidden");
 
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&cb=${Date.now()}`;
+    // 3. Play video from start cleanly with audio
+    video.currentTime = 0;
+    video.muted = false;
+    video.volume = 1.0;
+    video.play().catch(() => {});
 
     const iconEl = document.getElementById("who-banner-icon");
     const titleEl = document.getElementById("who-banner-title");
@@ -1053,16 +1076,15 @@
   }
 
   function replayRevealVideo() {
-    if (!driveVideos[whoIdx]) return;
-    const item = driveVideos[whoIdx];
-    const frame = document.getElementById("who-frame");
-    frame.src = `https://drive.google.com/file/d/${item.id}/preview?autoplay=1&cb=${Date.now()}`;
+    const video = document.getElementById("who-video");
+    video.currentTime = 0;
+    video.play().catch(() => {});
   }
 
   function advanceWho() {
-    if (progressTimer) clearInterval(progressTimer);
-    const frame = document.getElementById("who-frame");
-    frame.src = "about:blank";
+    const video = document.getElementById("who-video");
+    video.pause();
+    video.src = "";
 
     whoIdx++;
     if (whoIdx < driveVideos.length) {
