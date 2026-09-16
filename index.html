@@ -698,7 +698,7 @@
     </div>
 
     <div class="media-stage" id="media-stage-box">
-      <!-- Native HTML5 video tag: zero clutter, full height, no Google UI -->
+      <!-- Native HTML5 video tag -->
       <video id="who-video" playsinline webkit-playsinline x5-playsinline preload="auto"></video>
 
       <!-- Sound-Only Listening Veil with Real-Time Progress -->
@@ -802,19 +802,18 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycby9j4dJ7HtlkFPSMDRwhiCDBOOT2N_NsCbJRMbBadOfkXD0Uv0FkMuXyZvz_E3eIq4h/exec";
 
-  // LOCAL GITHUB VIDEOS: Pointed to your repository files
-  // (Adjust the filenames below if your repo files have specific names)
+  // LOCAL GITHUB VIDEOS: Updated with exact underscore matching
   const LOCAL_GITHUB_VIDEOS = [
-    { src: "videos/milad1.mp4", answer: "Milad" },
-    { src: "videos/milad2.mp4", answer: "Milad" },
-    { src: "videos/milad3.mp4", answer: "Milad" },
-    { src: "videos/milad4.mp4", answer: "Milad" },
-    { src: "videos/maher1.mp4", answer: "Maher" },
-    { src: "videos/maher2.mp4", answer: "Maher" },
-    { src: "videos/maher3.mp4", answer: "Maher" },
-    { src: "videos/maisune1.mp4", answer: "Maisune" },
-    { src: "videos/maisune2.mp4", answer: "Maisune" },
-    { src: "videos/maisune3.mp4", answer: "Maisune" }
+    { src: "videos/milad_1.mp4", answer: "Milad" },
+    { src: "videos/milad_2.mp4", answer: "Milad" },
+    { src: "videos/milad_3.mp4", answer: "Milad" },
+    { src: "videos/milad_4.mp4", answer: "Milad" },
+    { src: "videos/maher_1.mp4", answer: "Maher" },
+    { src: "videos/maher_2.mp4", answer: "Maher" },
+    { src: "videos/maher_3.mp4", answer: "Maher" },
+    { src: "videos/maisune_1.mp4", answer: "Maisune" },
+    { src: "videos/maisune_2.mp4", answer: "Maisune" },
+    { src: "videos/maisune_3.mp4", answer: "Maisune" }
   ];
 
   let playerName = "";
@@ -918,7 +917,7 @@
     startBtn.innerText = "Getting Party Ready... 🎈";
 
     try {
-      // 1. Prioritize GitHub repository videos (guarantees clean, native video)
+      // 1. Assign local repository videos
       if (LOCAL_GITHUB_VIDEOS && LOCAL_GITHUB_VIDEOS.length > 0) {
         driveVideos = shuffleArray(LOCAL_GITHUB_VIDEOS);
       }
@@ -932,7 +931,6 @@
         if (data && typeof data === "object") {
           if (Array.isArray(data.photos)) rawPhotos = data.photos;
           if (data.avatars) avatars = data.avatars;
-          // Fallback to backend videos only if local list is empty
           if (driveVideos.length === 0 && Array.isArray(data.videos)) {
             driveVideos = shuffleArray(data.videos);
           }
@@ -986,12 +984,12 @@
     document.getElementById("who-count").innerText = `${whoIdx + 1}/${driveVideos.length}`;
 
     // Load clean native MP4
-    video.src = item.src || `videos/${item.name || item.id}.mp4`;
+    video.src = item.src;
     video.currentTime = 0;
     video.muted = false;
     video.load();
 
-    // Video tracks its own progress natively
+    // Direct event listener for precise video tracking and progress bar animation
     video.ontimeupdate = () => {
       if (!video.duration) return;
       const progress = (video.currentTime / video.duration) * 100;
